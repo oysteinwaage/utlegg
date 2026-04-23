@@ -1,0 +1,745 @@
+@use './variables' as *;
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: $font-family;
+  background-color: $color-bg;
+  color: $color-text-primary;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+// ── App Layout ──────────────────────────────────────────────────
+.app-header {
+  background: $color-surface;
+  border-bottom: 1px solid $color-border;
+  padding: 0 $space-lg;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+
+  &__brand {
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+    font-size: $font-size-lg;
+    font-weight: 700;
+    color: $color-primary;
+    text-decoration: none;
+  }
+
+  &__brand-icon {
+    width: 32px;
+    height: 32px;
+    background: $color-primary;
+    border-radius: $radius-sm;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 18px;
+  }
+
+  &__user {
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+  }
+
+  &__user-name {
+    font-size: $font-size-sm;
+    font-weight: 500;
+    color: $color-text-secondary;
+
+    @media (max-width: $bp-sm) {
+      display: none;
+    }
+  }
+}
+
+.app-main {
+  flex: 1;
+  padding: $space-xl $space-lg;
+  max-width: 880px;
+  width: 100%;
+  margin: 0 auto;
+
+  @media (max-width: $bp-md) {
+    padding: $space-lg $space-md;
+  }
+}
+
+// ── Login Page ───────────────────────────────────────────────────
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #F0EBFF 0%, #E8E0FF 50%, #F8F7FF 100%);
+  padding: $space-md;
+
+  &__card {
+    background: $color-surface;
+    border-radius: $radius-xl;
+    padding: $space-2xl;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: $shadow-lg;
+    text-align: center;
+  }
+
+  &__logo {
+    width: 64px;
+    height: 64px;
+    background: linear-gradient(135deg, $color-primary, $color-primary-light);
+    border-radius: $radius-lg;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto $space-lg;
+    font-size: 32px;
+  }
+
+  &__title {
+    font-size: $font-size-2xl;
+    font-weight: 800;
+    color: $color-text-primary;
+    margin: 0 0 $space-sm;
+  }
+
+  &__subtitle {
+    font-size: $font-size-base;
+    color: $color-text-secondary;
+    margin: 0 0 $space-xl;
+    line-height: 1.5;
+  }
+
+  &__btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $space-sm;
+    padding: 14px $space-lg;
+    background: $color-surface;
+    border: 2px solid $color-border;
+    border-radius: $radius-md;
+    font-size: $font-size-base;
+    font-weight: 600;
+    color: $color-text-primary;
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+    &:hover {
+      border-color: $color-primary;
+      background: #FAF8FF;
+      transform: translateY(-1px);
+      box-shadow: $shadow-md;
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+
+    img {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  &__error {
+    margin-top: $space-md;
+    padding: $space-sm $space-md;
+    background: $color-danger-bg;
+    border-radius: $radius-sm;
+    font-size: $font-size-sm;
+    color: $color-danger;
+  }
+}
+
+// ── Overview Page ─────────────────────────────────────────────────
+.overview-page {
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: $space-xl;
+    flex-wrap: wrap;
+    gap: $space-md;
+  }
+
+  &__title {
+    font-size: $font-size-2xl;
+    font-weight: 800;
+    color: $color-text-primary;
+    margin: 0;
+  }
+
+  &__subtitle {
+    font-size: $font-size-base;
+    color: $color-text-secondary;
+    margin: $space-xs 0 0;
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: $space-md;
+  }
+
+  &__empty {
+    text-align: center;
+    padding: $space-2xl $space-xl;
+    color: $color-text-secondary;
+    background: $color-surface;
+    border-radius: $radius-lg;
+    border: 2px dashed $color-border;
+
+    h3 {
+      margin: $space-md 0 $space-sm;
+      color: $color-text-primary;
+      font-size: $font-size-xl;
+    }
+
+    p {
+      margin: 0;
+      font-size: $font-size-base;
+    }
+  }
+}
+
+// ── Sharing Card ──────────────────────────────────────────────────
+.sharing-card {
+  background: $color-surface;
+  border: 1px solid $color-border;
+  border-radius: $radius-lg;
+  padding: $space-lg;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  transition: all 0.15s ease;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, $color-primary, $color-primary-light);
+  }
+
+  &:hover {
+    border-color: $color-primary;
+    box-shadow: $shadow-md;
+    transform: translateY(-2px);
+  }
+
+  &--closed {
+    opacity: 0.65;
+
+    &::before {
+      background: $color-text-muted;
+    }
+  }
+
+  &__name {
+    font-size: $font-size-lg;
+    font-weight: 700;
+    color: $color-text-primary;
+    margin: 0 0 $space-sm;
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+    margin-bottom: $space-md;
+  }
+
+  &__participants {
+    display: flex;
+    align-items: center;
+    gap: $space-xs;
+    margin-bottom: $space-sm;
+  }
+
+  &__participant-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: $color-primary;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: $font-size-xs;
+    font-weight: 700;
+    border: 2px solid $color-surface;
+    overflow: hidden;
+    margin-left: -6px;
+
+    &:first-child {
+      margin-left: 0;
+    }
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  &__status {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 100px;
+    font-size: $font-size-xs;
+    font-weight: 600;
+
+    &--active {
+      background: $color-success-bg;
+      color: $color-success;
+    }
+
+    &--closed {
+      background: #F2F0F5;
+      color: $color-text-secondary;
+    }
+  }
+}
+
+// ── Sharing Page ──────────────────────────────────────────────────
+.sharing-page {
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: $space-xl;
+    gap: $space-md;
+    flex-wrap: wrap;
+  }
+
+  &__title-area {
+    flex: 1;
+  }
+
+  &__back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+    text-decoration: none;
+    margin-bottom: $space-sm;
+    transition: color 0.15s;
+
+    &:hover {
+      color: $color-primary;
+    }
+  }
+
+  &__title {
+    font-size: $font-size-2xl;
+    font-weight: 800;
+    color: $color-text-primary;
+    margin: 0;
+  }
+
+  &__currency-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 10px;
+    background: #F0EBFF;
+    color: $color-primary;
+    border-radius: 100px;
+    font-size: $font-size-xs;
+    font-weight: 600;
+    margin-top: $space-xs;
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+    flex-wrap: wrap;
+  }
+}
+
+// ── Participant Cards ─────────────────────────────────────────────
+.participant-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $space-md;
+  margin-bottom: $space-xl;
+
+  @media (max-width: $bp-sm) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.participant-card {
+  background: $color-surface;
+  border: 1px solid $color-border;
+  border-radius: $radius-lg;
+  padding: $space-lg;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+    margin-bottom: $space-md;
+  }
+
+  &__avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, $color-primary, $color-primary-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: $font-size-base;
+    overflow: hidden;
+    flex-shrink: 0;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  &__name {
+    font-size: $font-size-base;
+    font-weight: 600;
+    color: $color-text-primary;
+    margin: 0;
+
+    span {
+      font-size: $font-size-xs;
+      color: $color-text-muted;
+      font-weight: 400;
+      display: block;
+    }
+  }
+
+  &__total {
+    font-size: $font-size-2xl;
+    font-weight: 800;
+    color: $color-text-primary;
+    margin: 0 0 4px;
+  }
+
+  &__diff {
+    font-size: $font-size-sm;
+    font-weight: 600;
+
+    &--positive {
+      color: $color-positive;
+    }
+
+    &--negative {
+      color: $color-negative;
+    }
+
+    &--neutral {
+      color: $color-text-muted;
+    }
+  }
+}
+
+// ── Action Bar ────────────────────────────────────────────────────
+.action-bar {
+  display: flex;
+  align-items: center;
+  gap: $space-sm;
+  margin-bottom: $space-xl;
+  padding: $space-md;
+  background: $color-surface;
+  border: 1px solid $color-border;
+  border-radius: $radius-lg;
+  flex-wrap: wrap;
+
+  &__spacer {
+    flex: 1;
+  }
+}
+
+// ── Closing Status ─────────────────────────────────────────────────
+.closing-status {
+  background: #FFFBF0;
+  border: 1px solid #FDE68A;
+  border-radius: $radius-lg;
+  padding: $space-lg;
+  margin-bottom: $space-xl;
+
+  &__title {
+    font-size: $font-size-lg;
+    font-weight: 700;
+    color: #92400E;
+    margin: 0 0 $space-sm;
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+  }
+
+  &__summary {
+    font-size: $font-size-base;
+    color: #78350F;
+    margin: 0;
+    line-height: 1.5;
+  }
+}
+
+// ── Expense List ──────────────────────────────────────────────────
+.expense-list {
+  &__header {
+    font-size: $font-size-lg;
+    font-weight: 700;
+    color: $color-text-primary;
+    margin: 0 0 $space-md;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__count {
+    font-size: $font-size-sm;
+    font-weight: 400;
+    color: $color-text-secondary;
+  }
+
+  &__empty {
+    text-align: center;
+    padding: $space-2xl;
+    color: $color-text-muted;
+    font-size: $font-size-base;
+    background: $color-surface;
+    border: 1px solid $color-border;
+    border-radius: $radius-lg;
+  }
+}
+
+// ── Expense Item ──────────────────────────────────────────────────
+.expense-item {
+  background: $color-surface;
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+  padding: $space-md $space-lg;
+  margin-bottom: $space-sm;
+  display: flex;
+  align-items: center;
+  gap: $space-md;
+  transition: box-shadow 0.15s;
+
+  &:hover {
+    box-shadow: $shadow-sm;
+  }
+
+  &__icon {
+    width: 40px;
+    height: 40px;
+    border-radius: $radius-sm;
+    background: #F0EBFF;
+    color: $color-primary;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 18px;
+  }
+
+  &__body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__description {
+    font-size: $font-size-base;
+    font-weight: 600;
+    color: $color-text-primary;
+    margin: 0 0 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+    flex-wrap: wrap;
+  }
+
+  &__payer {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  &__payer-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: $color-primary-light;
+    flex-shrink: 0;
+  }
+
+  &__amount {
+    font-size: $font-size-lg;
+    font-weight: 700;
+    color: $color-text-primary;
+    white-space: nowrap;
+    text-align: right;
+
+    &__original {
+      font-size: $font-size-xs;
+      font-weight: 400;
+      color: $color-text-muted;
+      display: block;
+      text-align: right;
+    }
+  }
+}
+
+// ── Settlement Item ───────────────────────────────────────────────
+.settlement-item {
+  border-radius: $radius-md;
+  padding: $space-md $space-lg;
+  margin-bottom: $space-sm;
+  border: 1px solid $color-settlement-border;
+  background: $color-settlement-bg;
+  transition: background 0.3s ease, border-color 0.3s ease;
+
+  &--transferred {
+    background: $color-settled-bg;
+    border-color: $color-settled-border;
+  }
+
+  &__title {
+    font-size: $font-size-base;
+    font-weight: 700;
+    color: #92400E;
+    margin: 0 0 $space-sm;
+    line-height: 1.4;
+  }
+
+  &--transferred &__title {
+    color: $color-success;
+  }
+
+  &__amounts {
+    display: flex;
+    gap: $space-xl;
+    margin-bottom: $space-md;
+    flex-wrap: wrap;
+  }
+
+  &__amount-entry {
+    font-size: $font-size-sm;
+    color: #78350F;
+
+    span {
+      font-weight: 600;
+    }
+  }
+
+  &--transferred &__amount-entry {
+    color: #065F46;
+  }
+
+  &__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: $space-sm;
+  }
+
+  &__timestamp {
+    font-size: $font-size-xs;
+    color: $color-text-muted;
+  }
+
+  &__status-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: $color-success-bg;
+    border: 1px solid $color-success-border;
+    border-radius: $radius-sm;
+    font-size: $font-size-sm;
+    font-weight: 600;
+    color: $color-success;
+  }
+}
+
+// ── Modals ────────────────────────────────────────────────────────
+.modal-field-label {
+  font-size: $font-size-sm;
+  font-weight: 600;
+  color: $color-text-primary;
+  margin-bottom: $space-xs;
+  display: block;
+}
+
+.modal-exchange-rate {
+  font-size: $font-size-xs;
+  color: $color-text-secondary;
+  margin-top: $space-xs;
+  padding: $space-xs $space-sm;
+  background: #F8F7FF;
+  border-radius: $radius-sm;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+// ── Utility ───────────────────────────────────────────────────────
+.text-muted {
+  color: $color-text-muted;
+  font-size: $font-size-sm;
+}
+
+.badge-currency {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  background: #F0EBFF;
+  color: $color-primary;
+  border-radius: 100px;
+  font-size: $font-size-xs;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
