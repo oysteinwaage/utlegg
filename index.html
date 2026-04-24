@@ -9,6 +9,29 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Utlegg" />
     <title>Utlegg — Del utgifter enkelt</title>
+    <script>
+      // iOS standalone mode: intercept internal link clicks so they stay inside the
+      // app shell instead of opening a new Safari window. React Router normally
+      // handles this via pushState, but iOS fires the native <a> navigation before
+      // React's synthetic event can call preventDefault().
+      if (window.navigator.standalone) {
+        document.addEventListener('click', function (e) {
+          var node = e.target;
+          while (node && node.tagName !== 'A') {
+            node = node.parentElement;
+          }
+          if (!node) return;
+          var href = node.getAttribute('href');
+          if (!href) return;
+          var isInternal = !href.startsWith('http') || href.startsWith(location.origin);
+          if (!isInternal) return;
+          e.preventDefault();
+          var path = href.startsWith('http') ? href.slice(location.origin.length) : href;
+          history.pushState(null, '', path);
+          window.dispatchEvent(new PopStateEvent('popstate', { state: null }));
+        });
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
