@@ -1,4 +1,5 @@
 @use './variables' as *;
+@use 'sass:color';
 
 *,
 *::before,
@@ -266,7 +267,7 @@ body {
   z-index: 1;
 
   &:hover {
-    background: darken(#FEF3F2, 5%);
+    background: color.adjust(#FEF3F2, $lightness: -5%);
   }
 
   @media (hover: none) {

@@ -125,6 +125,7 @@ export default function EditExpenseModal({
             decimalScale={2}
             radius="md"
             required
+            inputMode="decimal"
           />
           <Select
             label="Valuta"
