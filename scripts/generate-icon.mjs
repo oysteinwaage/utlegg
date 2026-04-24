@@ -1,53 +1,51 @@
 import { createCanvas, Path2D } from '@napi-rs/canvas';
 import { writeFileSync } from 'fs';
 
-const SIZE = 180;
-const BG_RADIUS = 40;
-const canvas = createCanvas(SIZE, SIZE);
-const ctx = canvas.getContext('2d');
+const RECEIPT_OUTLINE = 'M5 21v-16a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v16l-3 -2l-2 2l-2 -2l-2 2l-2 -2l-3 2';
+const RECEIPT_SYMBOL  = 'M14 8h-2.5a1.5 1.5 0 0 0 0 3h1a1.5 1.5 0 0 1 0 3h-2.5m2 0v1.5m0 -9v1.5';
 
-// ── Purple rounded background (same $color-primary as the app) ───
-ctx.fillStyle = '#6941C6';
-ctx.beginPath();
-ctx.moveTo(BG_RADIUS, 0);
-ctx.lineTo(SIZE - BG_RADIUS, 0);
-ctx.quadraticCurveTo(SIZE, 0, SIZE, BG_RADIUS);
-ctx.lineTo(SIZE, SIZE - BG_RADIUS);
-ctx.quadraticCurveTo(SIZE, SIZE, SIZE - BG_RADIUS, SIZE);
-ctx.lineTo(BG_RADIUS, SIZE);
-ctx.quadraticCurveTo(0, SIZE, 0, SIZE - BG_RADIUS);
-ctx.lineTo(0, BG_RADIUS);
-ctx.quadraticCurveTo(0, 0, BG_RADIUS, 0);
-ctx.closePath();
-ctx.fill();
+function generateIcon(size) {
+  const bgRadius = Math.round(40 * (size / 180));
+  const canvas   = createCanvas(size, size);
+  const ctx      = canvas.getContext('2d');
 
-// ── Scale the 24×24 Tabler icon to fill the icon nicely ──────────
-// The receipt content sits roughly within x5-19, y3-21 of the 24×24 viewBox.
-// Scale 5.5 → viewBox occupies 132×132 px, centred in 180×180.
-const SCALE = 5.5;
-const offset = (SIZE - 24 * SCALE) / 2; // = 24 px each side
+  // Purple rounded background
+  ctx.fillStyle = '#6941C6';
+  ctx.beginPath();
+  ctx.moveTo(bgRadius, 0);
+  ctx.lineTo(size - bgRadius, 0);
+  ctx.quadraticCurveTo(size, 0, size, bgRadius);
+  ctx.lineTo(size, size - bgRadius);
+  ctx.quadraticCurveTo(size, size, size - bgRadius, size);
+  ctx.lineTo(bgRadius, size);
+  ctx.quadraticCurveTo(0, size, 0, size - bgRadius);
+  ctx.lineTo(0, bgRadius);
+  ctx.quadraticCurveTo(0, 0, bgRadius, 0);
+  ctx.closePath();
+  ctx.fill();
 
-ctx.save();
-ctx.translate(offset, offset);
-ctx.scale(SCALE, SCALE);
+  // Scale the 24×24 Tabler icon — fills ~73 % of the canvas (same ratio at all sizes)
+  const scale  = (size * 0.733) / 24;
+  const offset = (size - 24 * scale) / 2;
 
-ctx.strokeStyle = 'white';
-ctx.lineWidth = 1.5;          // × SCALE → ~8.3 px visible
-ctx.lineCap = 'round';
-ctx.lineJoin = 'round';
+  ctx.save();
+  ctx.translate(offset, offset);
+  ctx.scale(scale, scale);
 
-// Exact paths from @tabler/icons receipt-2:
-// 1. Receipt outline with zigzag / torn bottom
-ctx.stroke(new Path2D(
-  'M5 21v-16a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v16l-3 -2l-2 2l-2 -2l-2 2l-2 -2l-3 2'
-));
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth   = 1.5;   // in 24-unit space; rendered width scales with the icon
+  ctx.lineCap     = 'round';
+  ctx.lineJoin    = 'round';
 
-// 2. Currency / dollar symbol inside the receipt
-ctx.stroke(new Path2D(
-  'M14 8h-2.5a1.5 1.5 0 0 0 0 3h1a1.5 1.5 0 0 1 0 3h-2.5m2 0v1.5m0 -9v1.5'
-));
+  ctx.stroke(new Path2D(RECEIPT_OUTLINE));
+  ctx.stroke(new Path2D(RECEIPT_SYMBOL));
 
-ctx.restore();
+  ctx.restore();
+  return canvas.toBuffer('image/png');
+}
 
-writeFileSync('./public/apple-touch-icon.png', canvas.toBuffer('image/png'));
-console.log('✓ apple-touch-icon.png generert (180×180)');
+writeFileSync('./public/apple-touch-icon.png', generateIcon(180));
+console.log('✓ apple-touch-icon.png (180×180)');
+
+writeFileSync('./public/icon-512.png', generateIcon(512));
+console.log('✓ icon-512.png       (512×512)');
