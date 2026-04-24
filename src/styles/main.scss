@@ -17,6 +17,18 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+// Prevent iOS from zooming in when tapping input fields.
+// iOS zooms automatically when font-size < 16px. The @supports query
+// targets iOS Safari only, so desktop sizing is unaffected.
+@supports (-webkit-touch-callout: none) {
+  input,
+  textarea,
+  select,
+  [contenteditable] {
+    font-size: 16px !important;
+  }
+}
+
 #root {
   min-height: 100vh;
   display: flex;
