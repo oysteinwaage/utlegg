@@ -7,20 +7,30 @@ import { ref, update, remove } from 'firebase/database';
 import { database } from '../../firebase/config';
 import { CURRENCIES, getExchangeRate } from '../../services/currencyService';
 import { formatCurrency } from '../../utils/formatUtils';
+import type { ExpenseRecord } from '../../types';
+
+interface EditExpenseModalProps {
+  opened: boolean;
+  onClose: () => void;
+  expense: ExpenseRecord & { defaultCurrency?: string };
+  expenseId: string;
+  sharingId: string;
+  defaultCurrency?: string;
+}
 
 export default function EditExpenseModal({
   opened, onClose, expense, expenseId, sharingId, defaultCurrency = 'NOK',
-}) {
-  const [description, setDescription] = useState('');
-  const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState(defaultCurrency);
-  const [exchangeRate, setExchangeRate] = useState(1);
-  const [loadingRate, setLoadingRate] = useState(false);
-  const [rateError, setRateError] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
+}: EditExpenseModalProps) {
+  const [description, setDescription]     = useState('');
+  const [amount, setAmount]               = useState<number | string>('');
+  const [currency, setCurrency]           = useState(defaultCurrency);
+  const [exchangeRate, setExchangeRate]   = useState(1);
+  const [loadingRate, setLoadingRate]     = useState(false);
+  const [rateError, setRateError]         = useState('');
+  const [submitting, setSubmitting]       = useState(false);
+  const [error, setError]                 = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [deleting, setDeleting]           = useState(false);
 
   useEffect(() => {
     if (opened && expense) {
@@ -35,11 +45,7 @@ export default function EditExpenseModal({
 
   useEffect(() => {
     if (!opened) return;
-    if (currency === defaultCurrency) {
-      setExchangeRate(1);
-      setRateError('');
-      return;
-    }
+    if (currency === defaultCurrency) { setExchangeRate(1); setRateError(''); return; }
     setLoadingRate(true);
     setRateError('');
     getExchangeRate(currency, defaultCurrency)
@@ -56,7 +62,7 @@ export default function EditExpenseModal({
 
   async function handleSave() {
     if (!description.trim()) return setError('Beskrivelse er påkrevd.');
-    const numAmount = parseFloat(amount);
+    const numAmount = parseFloat(String(amount));
     if (!numAmount || numAmount <= 0) return setError('Beløp må være større enn 0.');
 
     setSubmitting(true);
@@ -88,16 +94,14 @@ export default function EditExpenseModal({
   }
 
   const currencyOptions = CURRENCIES.map((c) => ({ value: c.value, label: c.value }));
-  const amountNum = parseFloat(amount) || 0;
+  const amountNum       = parseFloat(String(amount)) || 0;
   const convertedAmount = amountNum * exchangeRate;
 
   return (
     <Modal opened={opened} onClose={handleClose} title="Rediger utlegg" size="md" radius="md">
       <Stack gap="md">
         {error && (
-          <Alert icon={<IconAlertCircle size={16} />} color="red" radius="md">
-            {error}
-          </Alert>
+          <Alert icon={<IconAlertCircle size={16} />} color="red" radius="md">{error}</Alert>
         )}
 
         <TextInput
@@ -126,7 +130,7 @@ export default function EditExpenseModal({
             label="Valuta"
             data={currencyOptions}
             value={currency}
-            onChange={setCurrency}
+            onChange={(val) => { if (val) setCurrency(val); }}
             radius="md"
             w={120}
           />
@@ -135,20 +139,14 @@ export default function EditExpenseModal({
         {currency !== defaultCurrency && (
           <div className="modal-exchange-rate">
             {loadingRate ? (
-              <>
-                <Loader size="xs" />
-                <span>Henter kurs…</span>
-              </>
+              <><Loader size="xs" /><span>Henter kurs…</span></>
             ) : rateError ? (
               <Text size="xs" c="red">{rateError}</Text>
             ) : (
               <>
                 <span>1 {currency} = {exchangeRate.toFixed(4)} {defaultCurrency}</span>
                 {amountNum > 0 && (
-                  <>
-                    <IconArrowRight size={12} />
-                    <strong>{formatCurrency(convertedAmount, defaultCurrency)}</strong>
-                  </>
+                  <><IconArrowRight size={12} /><strong>{formatCurrency(convertedAmount, defaultCurrency)}</strong></>
                 )}
               </>
             )}

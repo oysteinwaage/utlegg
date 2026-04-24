@@ -6,17 +6,30 @@ import { IconAlertCircle, IconArrowRight } from '@tabler/icons-react';
 import { CURRENCIES, getExchangeRate } from '../../services/currencyService';
 import { formatCurrency } from '../../utils/formatUtils';
 
-export default function AddExpenseModal({ opened, onClose, onSubmit, defaultCurrency = 'NOK' }) {
-  const [description, setDescription] = useState('');
-  const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState(defaultCurrency);
-  const [exchangeRate, setExchangeRate] = useState(1);
-  const [loadingRate, setLoadingRate] = useState(false);
-  const [rateError, setRateError] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
+interface AddExpenseModalProps {
+  opened: boolean;
+  onClose: () => void;
+  onSubmit: (data: {
+    description: string;
+    amount: number;
+    currency: string;
+    amountInDefault: number;
+  }) => Promise<void>;
+  defaultCurrency?: string;
+}
 
-  // Reset currency when modal opens
+export default function AddExpenseModal({
+  opened, onClose, onSubmit, defaultCurrency = 'NOK',
+}: AddExpenseModalProps) {
+  const [description, setDescription] = useState('');
+  const [amount, setAmount]           = useState<number | string>('');
+  const [currency, setCurrency]       = useState(defaultCurrency);
+  const [exchangeRate, setExchangeRate]   = useState(1);
+  const [loadingRate, setLoadingRate]     = useState(false);
+  const [rateError, setRateError]         = useState('');
+  const [submitting, setSubmitting]       = useState(false);
+  const [error, setError]                 = useState('');
+
   useEffect(() => {
     if (opened) {
       setCurrency(defaultCurrency);
@@ -28,18 +41,11 @@ export default function AddExpenseModal({ opened, onClose, onSubmit, defaultCurr
     }
   }, [opened, defaultCurrency]);
 
-  // Fetch exchange rate when currency changes away from default
   useEffect(() => {
     if (!opened) return;
-    if (currency === defaultCurrency) {
-      setExchangeRate(1);
-      setRateError('');
-      return;
-    }
-
+    if (currency === defaultCurrency) { setExchangeRate(1); setRateError(''); return; }
     setLoadingRate(true);
     setRateError('');
-
     getExchangeRate(currency, defaultCurrency)
       .then((rate) => setExchangeRate(rate))
       .catch(() => setRateError('Kunne ikke hente valutakurs. Konvertert beløp er estimert.'))
@@ -57,12 +63,11 @@ export default function AddExpenseModal({ opened, onClose, onSubmit, defaultCurr
 
   async function handleSubmit() {
     if (!description.trim()) return setError('Beskrivelse er påkrevd.');
-    const numAmount = parseFloat(amount);
+    const numAmount = parseFloat(String(amount));
     if (!numAmount || numAmount <= 0) return setError('Beløp må være større enn 0.');
 
     setSubmitting(true);
     setError('');
-
     try {
       await onSubmit({
         description: description.trim(),
@@ -79,16 +84,14 @@ export default function AddExpenseModal({ opened, onClose, onSubmit, defaultCurr
   }
 
   const currencyOptions = CURRENCIES.map((c) => ({ value: c.value, label: c.value }));
-  const amountNum = parseFloat(amount) || 0;
+  const amountNum       = parseFloat(String(amount)) || 0;
   const convertedAmount = amountNum * exchangeRate;
 
   return (
     <Modal opened={opened} onClose={handleClose} title="Legg til utlegg" size="md" radius="md">
       <Stack gap="md">
         {error && (
-          <Alert icon={<IconAlertCircle size={16} />} color="red" radius="md">
-            {error}
-          </Alert>
+          <Alert icon={<IconAlertCircle size={16} />} color="red" radius="md">{error}</Alert>
         )}
 
         <TextInput
@@ -117,7 +120,7 @@ export default function AddExpenseModal({ opened, onClose, onSubmit, defaultCurr
             label="Valuta"
             data={currencyOptions}
             value={currency}
-            onChange={setCurrency}
+            onChange={(val) => { if (val) setCurrency(val); }}
             radius="md"
             w={120}
           />
@@ -126,20 +129,14 @@ export default function AddExpenseModal({ opened, onClose, onSubmit, defaultCurr
         {currency !== defaultCurrency && (
           <div className="modal-exchange-rate">
             {loadingRate ? (
-              <>
-                <Loader size="xs" />
-                <span>Henter kurs…</span>
-              </>
+              <><Loader size="xs" /><span>Henter kurs…</span></>
             ) : rateError ? (
               <Text size="xs" c="red">{rateError}</Text>
             ) : (
               <>
                 <span>1 {currency} = {exchangeRate.toFixed(4)} {defaultCurrency}</span>
                 {amountNum > 0 && (
-                  <>
-                    <IconArrowRight size={12} />
-                    <strong>{formatCurrency(convertedAmount, defaultCurrency)}</strong>
-                  </>
+                  <><IconArrowRight size={12} /><strong>{formatCurrency(convertedAmount, defaultCurrency)}</strong></>
                 )}
               </>
             )}

@@ -25,7 +25,8 @@ export default function LoginPage() {
       await loginWithGoogle();
       navigate('/');
     } catch (err) {
-      if (err.code !== 'auth/popup-closed-by-user') {
+      const e = err as { code?: string };
+      if (e.code !== 'auth/popup-closed-by-user') {
         setError('Innlogging feilet. Prøv igjen.');
       }
     } finally {
@@ -44,11 +45,7 @@ export default function LoginPage() {
           Del utgifter enkelt med en venn. Hold styr på hvem som har lagt ut hva.
         </p>
 
-        <button
-          className="login-page__btn"
-          onClick={handleGoogleLogin}
-          disabled={loading}
-        >
+        <button className="login-page__btn" onClick={handleGoogleLogin} disabled={loading}>
           {GOOGLE_LOGO}
           {loading ? 'Logger inn…' : 'Fortsett med Google'}
         </button>

@@ -8,49 +8,49 @@ import { useAuth } from '../contexts/AuthContext';
 import AppLayout from '../components/AppLayout';
 import SharingCard from '../components/sharing/SharingCard';
 import CreateSharingModal from '../components/sharing/CreateSharingModal';
+import type { Sharing, UserProfile } from '../types';
 
 export default function OverviewPage() {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
-  const [sharings, setSharings] = useState([]);
-  const [participantProfiles, setParticipantProfiles] = useState({});
+  const [sharings, setSharings] = useState<Sharing[]>([]);
+  const [participantProfiles, setParticipantProfiles] = useState<Record<string, UserProfile>>({});
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
 
   async function loadSharings() {
     setLoading(true);
     try {
-      const userSharingsSnap = await get(ref(database, `userSharings/${currentUser.uid}`));
+      const userSharingsSnap = await get(ref(database, `userSharings/${currentUser!.uid}`));
       if (!userSharingsSnap.exists()) {
         setSharings([]);
         setLoading(false);
         return;
       }
 
-      const sharingIds = Object.keys(userSharingsSnap.val());
+      const sharingIds = Object.keys(userSharingsSnap.val() as Record<string, unknown>);
       const sharingSnaps = await Promise.all(
-        sharingIds.map((id) => get(ref(database, `sharings/${id}`)))
+        sharingIds.map((sid) => get(ref(database, `sharings/${sid}`))),
       );
 
       const loadedSharings = sharingSnaps
         .filter((s) => s.exists())
-        .map((s) => ({ id: s.key, ...s.val() }))
+        .map((s) => ({ id: s.key!, ...(s.val() as Omit<Sharing, 'id'>) }))
         .sort((a, b) => b.createdAt - a.createdAt);
 
       setSharings(loadedSharings);
 
-      // Load all participant profiles
-      const allUids = new Set();
+      const allUids = new Set<string>();
       loadedSharings.forEach((s) => {
         if (s.participants) Object.keys(s.participants).forEach((uid) => allUids.add(uid));
       });
 
       const profileSnaps = await Promise.all(
-        [...allUids].map((uid) => get(ref(database, `users/${uid}`)))
+        [...allUids].map((uid) => get(ref(database, `users/${uid}`))),
       );
-      const profiles = {};
+      const profiles: Record<string, UserProfile> = {};
       profileSnaps.forEach((snap) => {
-        if (snap.exists()) profiles[snap.key] = snap.val();
+        if (snap.exists()) profiles[snap.key!] = snap.val() as UserProfile;
       });
       setParticipantProfiles(profiles);
     } finally {
@@ -60,18 +60,16 @@ export default function OverviewPage() {
 
   useEffect(() => {
     loadSharings();
-  }, [currentUser.uid]);
+  }, [currentUser!.uid]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  function handleCreated(newId) {
+  function handleCreated(newId: string) {
     navigate(`/sharing/${newId}`);
   }
 
-  async function handleDelete(sharing) {
-    const participantIds = Object.keys(sharing.participants || {});
+  async function handleDelete(sharing: Sharing) {
+    const pids = Object.keys(sharing.participants || {});
     await remove(ref(database, `sharings/${sharing.id}`));
-    await Promise.all(
-      participantIds.map((uid) => remove(ref(database, `userSharings/${uid}/${sharing.id}`)))
-    );
+    await Promise.all(pids.map((uid) => remove(ref(database, `userSharings/${uid}/${sharing.id}`))));
     setSharings((prev) => prev.filter((s) => s.id !== sharing.id));
   }
 

@@ -3,12 +3,18 @@ import { IconCheck, IconTransfer } from '@tabler/icons-react';
 import { ref, update } from 'firebase/database';
 import { database } from '../../firebase/config';
 import { formatTimestamp, formatCurrency } from '../../utils/formatUtils';
+import type { SettlementRecord, UserProfile } from '../../types';
 
-export default function SettlementItem({ expense, expenseId, sharingId, participants }) {
-  const debtor = participants[expense.debtorId];
-  const creditor = participants[expense.creditorId];
+interface SettlementItemProps {
+  expense: SettlementRecord & { defaultCurrency?: string };
+  expenseId: string;
+  sharingId: string;
+  participants: Record<string, UserProfile>;
+}
+
+export default function SettlementItem({ expense, expenseId, sharingId, participants }: SettlementItemProps) {
   const user1 = participants[expense.user1Id];
-  const user2 = participants[expense.user2Id];
+  const user2    = participants[expense.user2Id];
 
   async function handleTransferred() {
     await update(ref(database, `sharings/${sharingId}/expenses/${expenseId}`), {

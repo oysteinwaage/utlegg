@@ -3,16 +3,29 @@ import { ActionIcon } from '@mantine/core';
 import { IconReceipt, IconPencil } from '@tabler/icons-react';
 import { formatTimestamp, formatCurrency } from '../../utils/formatUtils';
 import EditExpenseModal from './EditExpenseModal';
+import type { ExpenseRecord, UserProfile } from '../../types';
+
+type EnrichedExpense = ExpenseRecord & { defaultCurrency: string };
+
+interface ExpenseItemProps {
+  expense: EnrichedExpense;
+  expenseId: string;
+  sharingId: string;
+  participants: Record<string, UserProfile>;
+  currentUserId: string;
+  isAdmin: boolean;
+  lastSettlementAt: number;
+}
 
 export default function ExpenseItem({
   expense, expenseId, sharingId, participants, currentUserId, isAdmin, lastSettlementAt,
-}) {
+}: ExpenseItemProps) {
   const [editOpen, setEditOpen] = useState(false);
-  const payer = participants[expense.paidBy];
-  const payerName = payer?.name || 'Ukjent';
-  const showOriginal = expense.currency !== expense.defaultCurrency && expense.currency;
+  const payer      = participants[expense.paidBy];
+  const payerName  = payer?.name || 'Ukjent';
+  const showOriginal  = expense.currency !== expense.defaultCurrency && expense.currency;
   const afterSettlement = !lastSettlementAt || expense.timestamp > lastSettlementAt;
-  const canEdit = afterSettlement && (expense.paidBy === currentUserId || isAdmin);
+  const canEdit       = afterSettlement && (expense.paidBy === currentUserId || isAdmin);
 
   return (
     <>

@@ -1,7 +1,20 @@
 import ExpenseItem from './ExpenseItem';
 import SettlementItem from './SettlementItem';
+import type { AnyEntry, ExpenseRecord, SettlementRecord, UserProfile } from '../../types';
 
-export default function ExpenseList({ expenses, sharingId, participants, defaultCurrency, currentUserId, isAdmin, lastSettlementAt }) {
+interface ExpenseListProps {
+  expenses: Record<string, AnyEntry> | undefined;
+  sharingId: string;
+  participants: Record<string, UserProfile>;
+  defaultCurrency: string;
+  currentUserId: string;
+  isAdmin: boolean;
+  lastSettlementAt: number;
+}
+
+export default function ExpenseList({
+  expenses, sharingId, participants, defaultCurrency, currentUserId, isAdmin, lastSettlementAt,
+}: ExpenseListProps) {
   if (!expenses || Object.keys(expenses).length === 0) {
     return (
       <div className="expense-list">
@@ -11,7 +24,6 @@ export default function ExpenseList({ expenses, sharingId, participants, default
     );
   }
 
-  // Sort by timestamp descending (newest first)
   const sorted = Object.entries(expenses).sort(([, a], [, b]) => b.timestamp - a.timestamp);
 
   return (
@@ -21,10 +33,12 @@ export default function ExpenseList({ expenses, sharingId, participants, default
         <span className="expense-list__count">{sorted.length} poster</span>
       </h3>
 
-      {sorted.map(([id, expense]) => {
-        const enriched = { ...expense, defaultCurrency };
-
-        if (expense.type === 'settlement') {
+      {sorted.map(([id, entry]) => {
+        if (entry.type === 'settlement') {
+          const enriched: SettlementRecord & { defaultCurrency: string } = {
+            ...(entry as SettlementRecord),
+            defaultCurrency,
+          };
           return (
             <SettlementItem
               key={id}
@@ -36,6 +50,10 @@ export default function ExpenseList({ expenses, sharingId, participants, default
           );
         }
 
+        const enriched: ExpenseRecord & { defaultCurrency: string } = {
+          ...(entry as ExpenseRecord),
+          defaultCurrency,
+        };
         return (
           <ExpenseItem
             key={id}

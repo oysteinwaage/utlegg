@@ -1,8 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import {
-  Button, Modal, Text, Stack, Center, Loader, Badge,
-} from '@mantine/core';
+import { Button, Modal, Text, Stack, Center, Loader, Badge } from '@mantine/core';
 import {
   IconPlus, IconArrowLeft, IconX, IconRefresh, IconAlertTriangle, IconTrophy, IconTrash,
 } from '@tabler/icons-react';
@@ -13,33 +11,58 @@ import AppLayout from '../components/AppLayout';
 import ExpenseList from '../components/expense/ExpenseList';
 import AddExpenseModal from '../components/expense/AddExpenseModal';
 import { formatCurrency, formatShortDate, getInitials } from '../utils/formatUtils';
+import type { Sharing, UserProfile, AnyEntry, ExpenseRecord, SettlementRecord } from '../types';
 
-// ── Helpers ─────────────────────────────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
-function computeTotals(expenses, lastSettlementAt) {
+function computeTotals(
+  expenses: Record<string, AnyEntry> | undefined,
+  lastSettlementAt: number | null,
+): Record<string, number> {
   if (!expenses) return {};
   return Object.values(expenses)
-    .filter((e) => e.type === 'expense')
+    .filter((e): e is ExpenseRecord => e.type === 'expense')
     .filter((e) => !lastSettlementAt || e.timestamp > lastSettlementAt)
-    .reduce((acc, e) => {
+    .reduce<Record<string, number>>((acc, e) => {
       acc[e.paidBy] = (acc[e.paidBy] || 0) + (e.amountInDefault || 0);
       return acc;
     }, {});
 }
 
-function computeSettlement(totals, participantIds) {
-  const [uid1, uid2] = participantIds;
+interface SettlementResult {
+  debtorId: string;
+  creditorId: string;
+  debtAmount: number;
+  t1: number;
+  t2: number;
+  uid1: string;
+  uid2: string;
+}
+
+function computeSettlement(
+  totals: Record<string, number>,
+  participantIds: string[],
+): SettlementResult {
+  const [uid1, uid2] = participantIds as [string, string];
   const t1 = totals[uid1] || 0;
   const t2 = totals[uid2] || 0;
   const debtAmount = Math.round((Math.abs(t1 - t2) / 2) * 100) / 100;
-  const debtorId = t1 >= t2 ? uid2 : uid1;
+  const debtorId   = t1 >= t2 ? uid2 : uid1;
   const creditorId = t1 >= t2 ? uid1 : uid2;
   return { debtorId, creditorId, debtAmount, t1, t2, uid1, uid2 };
 }
 
-// ── Participant Card component ───────────────────────────────────────────────
+// ── Participant Card ──────────────────────────────────────────────────────────
 
-function ParticipantCard({ profile, total, diff, defaultCurrency, isCurrentUser }) {
+interface ParticipantCardProps {
+  profile: UserProfile | undefined;
+  total: number;
+  diff: number;
+  defaultCurrency: string;
+  isCurrentUser: boolean;
+}
+
+function ParticipantCard({ profile, total, diff, defaultCurrency, isCurrentUser }: ParticipantCardProps) {
   const diffDisplay = diff === 0
     ? null
     : diff > 0
@@ -69,19 +92,24 @@ function ParticipantCard({ profile, total, diff, defaultCurrency, isCurrentUser 
       </div>
       <p className="participant-card__total">{formatCurrency(total, defaultCurrency)}</p>
       {diffDisplay && (
-        <p className={`participant-card__diff ${diffClass}`}>
-          {diffDisplay}
-        </p>
+        <p className={`participant-card__diff ${diffClass}`}>{diffDisplay}</p>
       )}
     </div>
   );
 }
 
-// ── Closing Status component ─────────────────────────────────────────────────
+// ── Closing Status ────────────────────────────────────────────────────────────
 
-function ClosingStatus({ participants, participantIds, totals, defaultCurrency }) {
+interface ClosingStatusProps {
+  participants: Record<string, UserProfile>;
+  participantIds: string[];
+  totals: Record<string, number>;
+  defaultCurrency: string;
+}
+
+function ClosingStatus({ participants, participantIds, totals, defaultCurrency }: ClosingStatusProps) {
   const { debtorId, creditorId, debtAmount } = computeSettlement(totals, participantIds);
-  const debtor = participants[debtorId];
+  const debtor   = participants[debtorId];
   const creditor = participants[creditorId];
 
   return (
@@ -105,52 +133,41 @@ function ClosingStatus({ participants, participantIds, totals, defaultCurrency }
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function SharingPage() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const { currentUser, userProfile } = useAuth();
-  const isAdmin = userProfile?.roles?.includes('ADMIN') ?? false;
   const navigate = useNavigate();
+  const isAdmin = userProfile?.roles?.includes('ADMIN') ?? false;
 
-  const [sharing, setSharing] = useState(null);
-  const [participants, setParticipants] = useState({});
+  const [sharing, setSharing] = useState<Sharing | null>(null);
+  const [participants, setParticipants] = useState<Record<string, UserProfile>>({});
   const [loading, setLoading] = useState(true);
 
-  const [addExpenseOpen, setAddExpenseOpen] = useState(false);
-  const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
+  const [addExpenseOpen, setAddExpenseOpen]         = useState(false);
+  const [closeConfirmOpen, setCloseConfirmOpen]     = useState(false);
   const [settlementConfirmOpen, setSettlementConfirmOpen] = useState(false);
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen]   = useState(false);
 
-  // Subscribe to sharing in real-time
   useEffect(() => {
     if (!id) return;
     const sharingRef = ref(database, `sharings/${id}`);
 
     const unsub = onValue(sharingRef, (snap) => {
-      if (!snap.exists()) {
-        navigate('/overview');
-        return;
-      }
-      const data = snap.val();
-
-      // Guard: only participants may view
-      if (!data.participants?.[currentUser.uid]) {
-        navigate('/overview');
-        return;
-      }
-
-      setSharing({ id: snap.key, ...data });
+      if (!snap.exists()) { navigate('/overview'); return; }
+      const data = snap.val() as Omit<Sharing, 'id'>;
+      if (!data.participants?.[currentUser!.uid]) { navigate('/overview'); return; }
+      setSharing({ id: snap.key!, ...data });
       setLoading(false);
     });
 
     return () => unsub();
-  }, [id, currentUser.uid, navigate]);
+  }, [id, currentUser, navigate]);
 
-  // Load participant profiles whenever the sharing changes
   useEffect(() => {
     if (!sharing?.participants) return;
     const uids = Object.keys(sharing.participants);
     Promise.all(uids.map((uid) => get(ref(database, `users/${uid}`)))).then((snaps) => {
-      const profiles = {};
-      snaps.forEach((s) => { if (s.exists()) profiles[s.key] = s.val(); });
+      const profiles: Record<string, UserProfile> = {};
+      snaps.forEach((s) => { if (s.exists()) profiles[s.key!] = s.val() as UserProfile; });
       setParticipants(profiles);
     });
   }, [sharing?.participants]);
@@ -161,44 +178,48 @@ export default function SharingPage() {
   );
 
   const totals = useMemo(
-    () => computeTotals(sharing?.expenses, sharing?.lastSettlementAt),
+    () => computeTotals(sharing?.expenses, sharing?.lastSettlementAt ?? null),
     [sharing?.expenses, sharing?.lastSettlementAt],
   );
 
   const grandTotal = Object.values(totals).reduce((s, v) => s + v, 0);
-  const fairShare = grandTotal / 2;
+  const fairShare  = grandTotal / 2;
 
-  // ── Handlers ────────────────────────────────────────────────────────────────
+  // ── Handlers ─────────────────────────────────────────────────────────────────
 
-  async function handleAddExpense({ description, amount, currency, amountInDefault }) {
+  async function handleAddExpense({
+    description, amount, currency, amountInDefault,
+  }: { description: string; amount: number; currency: string; amountInDefault: number }) {
     const expensesRef = ref(database, `sharings/${id}/expenses`);
     const newRef = push(expensesRef);
-    await set(newRef, {
+    const entry: Omit<ExpenseRecord, 'defaultCurrency'> = {
       type: 'expense',
       description,
       amount,
       currency,
       amountInDefault,
-      paidBy: currentUser.uid,
+      paidBy: currentUser!.uid,
       timestamp: Date.now(),
-    });
+    };
+    await set(newRef, entry);
   }
 
   async function handleSettlement() {
     const { debtorId, creditorId, debtAmount, t1, t2, uid1, uid2 } =
       computeSettlement(totals, participantIds);
 
-    const debtor = participants[debtorId];
+    const debtor   = participants[debtorId];
     const creditor = participants[creditorId];
-    const dateStr = formatShortDate(Date.now());
+    const dateStr  = formatShortDate(Date.now());
+    const defaultCurrency = sharing!.defaultCurrency;
 
     const descriptionText =
       debtAmount > 0
-        ? `Nullstiller ${dateStr}. ${debtor?.name} skylder ${creditor?.name} ${formatCurrency(debtAmount, sharing.defaultCurrency)}`
+        ? `Nullstiller ${dateStr}. ${debtor?.name} skylder ${creditor?.name} ${formatCurrency(debtAmount, defaultCurrency)}`
         : `Nullstiller ${dateStr}. Ingen skylder noen noe.`;
 
     const now = Date.now();
-    const settlementEntry = {
+    const settlementEntry: Omit<SettlementRecord, 'defaultCurrency'> = {
       type: 'settlement',
       description: descriptionText,
       debtorId,
@@ -208,13 +229,13 @@ export default function SharingPage() {
       user2Id: uid2,
       user1Amount: t1,
       user2Amount: t2,
-      currency: sharing.defaultCurrency,
+      currency: defaultCurrency,
       transferred: false,
       timestamp: now,
     };
 
     const expensesRef = ref(database, `sharings/${id}/expenses`);
-    const newExpRef = push(expensesRef);
+    const newExpRef   = push(expensesRef);
     await set(newExpRef, settlementEntry);
     await update(ref(database, `sharings/${id}`), { lastSettlementAt: now });
     setSettlementConfirmOpen(false);
@@ -226,22 +247,18 @@ export default function SharingPage() {
   }
 
   async function handleDelete() {
-    const participantIds = Object.keys(sharing.participants || {});
+    const pids = Object.keys(sharing!.participants || {});
     await remove(ref(database, `sharings/${id}`));
-    await Promise.all(
-      participantIds.map((uid) => remove(ref(database, `userSharings/${uid}/${id}`)))
-    );
+    await Promise.all(pids.map((uid) => remove(ref(database, `userSharings/${uid}/${id}`))));
     navigate('/overview');
   }
 
-  // ── Render ───────────────────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────────────────
 
   if (loading || !sharing) {
     return (
       <AppLayout>
-        <Center h={400}>
-          <Loader color="violet" />
-        </Center>
+        <Center h={400}><Loader color="violet" /></Center>
       </AppLayout>
     );
   }
@@ -258,9 +275,7 @@ export default function SharingPage() {
             Tilbake til oversikt
           </Link>
           <h1 className="sharing-page__title">{sharing.name}</h1>
-          <div className="sharing-page__currency-badge">
-            {sharing.defaultCurrency}
-          </div>
+          <div className="sharing-page__currency-badge">{sharing.defaultCurrency}</div>
         </div>
 
         <div className="sharing-page__actions">
@@ -288,9 +303,7 @@ export default function SharingPage() {
           )}
           {!isActive && (
             <>
-              <Badge color="gray" variant="light" size="lg" radius="md">
-                Avsluttet
-              </Badge>
+              <Badge color="gray" variant="light" size="lg" radius="md">Avsluttet</Badge>
               <Button
                 variant="light"
                 color="red"
@@ -309,7 +322,7 @@ export default function SharingPage() {
       <div className="participant-cards">
         {participantIds.map((uid) => {
           const total = totals[uid] || 0;
-          const diff = total - fairShare;
+          const diff  = total - fairShare;
           return (
             <ParticipantCard
               key={uid}
@@ -317,13 +330,13 @@ export default function SharingPage() {
               total={total}
               diff={diff}
               defaultCurrency={sharing.defaultCurrency}
-              isCurrentUser={uid === currentUser.uid}
+              isCurrentUser={uid === currentUser!.uid}
             />
           );
         })}
       </div>
 
-      {/* Closing status module */}
+      {/* Closing status */}
       {!isActive && (
         <ClosingStatus
           participants={participants}
@@ -354,10 +367,10 @@ export default function SharingPage() {
       {/* Expense List */}
       <ExpenseList
         expenses={sharing.expenses}
-        sharingId={id}
+        sharingId={id!}
         participants={participants}
         defaultCurrency={sharing.defaultCurrency}
-        currentUserId={currentUser.uid}
+        currentUserId={currentUser!.uid}
         isAdmin={isAdmin}
         lastSettlementAt={sharing.lastSettlementAt ?? 0}
       />
@@ -382,7 +395,7 @@ export default function SharingPage() {
           {(() => {
             if (participantIds.length < 2) return null;
             const { debtorId, creditorId, debtAmount } = computeSettlement(totals, participantIds);
-            const debtor = participants[debtorId];
+            const debtor   = participants[debtorId];
             const creditor = participants[creditorId];
             return (
               <Text size="sm">
@@ -406,11 +419,7 @@ export default function SharingPage() {
           >
             Bekreft avregning
           </Button>
-          <Button
-            variant="subtle"
-            radius="md"
-            onClick={() => setSettlementConfirmOpen(false)}
-          >
+          <Button variant="subtle" radius="md" onClick={() => setSettlementConfirmOpen(false)}>
             Avbryt
           </Button>
         </Stack>
@@ -440,11 +449,7 @@ export default function SharingPage() {
           >
             Ja, avslutt delingen
           </Button>
-          <Button
-            variant="subtle"
-            radius="md"
-            onClick={() => setCloseConfirmOpen(false)}
-          >
+          <Button variant="subtle" radius="md" onClick={() => setCloseConfirmOpen(false)}>
             Avbryt
           </Button>
         </Stack>
@@ -474,11 +479,7 @@ export default function SharingPage() {
           >
             Ja, slett delingen
           </Button>
-          <Button
-            variant="subtle"
-            radius="md"
-            onClick={() => setDeleteConfirmOpen(false)}
-          >
+          <Button variant="subtle" radius="md" onClick={() => setDeleteConfirmOpen(false)}>
             Avbryt
           </Button>
         </Stack>

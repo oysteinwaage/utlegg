@@ -4,12 +4,19 @@ import { Modal, Button, Stack, Text } from '@mantine/core';
 import { IconCircleCheck, IconCircleDashed, IconTrash, IconAlertTriangle } from '@tabler/icons-react';
 import { getInitials, formatShortDate } from '../../utils/formatUtils';
 import { getCurrencyLabel } from '../../services/currencyService';
+import type { Sharing, UserProfile } from '../../types';
 
-export default function SharingCard({ sharing, participantProfiles = {}, onDelete }) {
+interface SharingCardProps {
+  sharing: Sharing;
+  participantProfiles?: Record<string, UserProfile>;
+  onDelete: (sharing: Sharing) => Promise<void>;
+}
+
+export default function SharingCard({ sharing, participantProfiles = {}, onDelete }: SharingCardProps) {
   const isActive = sharing.isActive;
   const participantIds = sharing.participants ? Object.keys(sharing.participants) : [];
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [deleting, setDeleting]       = useState(false);
 
   async function handleDeleteConfirm() {
     setDeleting(true);
@@ -93,7 +100,13 @@ export default function SharingCard({ sharing, participantProfiles = {}, onDelet
               inkludert alle utlegg, slettes permanent og kan ikke gjenopprettes.
             </Text>
           </div>
-          <Button color="red" radius="md" loading={deleting} onClick={handleDeleteConfirm} leftSection={<IconTrash size={16} />}>
+          <Button
+            color="red"
+            radius="md"
+            loading={deleting}
+            onClick={handleDeleteConfirm}
+            leftSection={<IconTrash size={16} />}
+          >
             Ja, slett delingen
           </Button>
           <Button variant="subtle" radius="md" onClick={() => setConfirmOpen(false)}>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { Center, Loader } from '@mantine/core';
 import { ref, get } from 'firebase/database';
@@ -9,20 +9,19 @@ import OverviewPage from './pages/OverviewPage';
 import SharingPage from './pages/SharingPage';
 import AdminPage from './pages/AdminPage';
 
-function ProtectedRoute({ children }) {
+function ProtectedRoute({ children }: { children: ReactNode }) {
   const { currentUser } = useAuth();
   if (!currentUser) return <Navigate to="/login" replace />;
-  return children;
+  return <>{children}</>;
 }
 
-function AdminRoute({ children }) {
+function AdminRoute({ children }: { children: ReactNode }) {
   const { currentUser, userProfile } = useAuth();
   if (!currentUser) return <Navigate to="/login" replace />;
   if (userProfile && !userProfile.roles?.includes('ADMIN')) return <Navigate to="/" replace />;
-  return children;
+  return <>{children}</>;
 }
 
-// Root route: auto-redirect logged-in users to their latest active sharing
 function RootRedirect() {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
@@ -34,27 +33,33 @@ function RootRedirect() {
       return;
     }
 
-    get(ref(database, `userSharings/${currentUser.uid}`)).then(async (snap) => {
-      if (!snap.exists()) {
-        navigate('/overview', { replace: true });
-        return;
-      }
+    get(ref(database, `userSharings/${currentUser.uid}`))
+      .then(async (snap) => {
+        if (!snap.exists()) {
+          navigate('/overview', { replace: true });
+          return;
+        }
 
-      const sharingIds = Object.keys(snap.val());
-      const sharingSnaps = await Promise.all(
-        sharingIds.map((id) => get(ref(database, `sharings/${id}`)))
-      );
+        const sharingIds = Object.keys(snap.val() as Record<string, unknown>);
+        const sharingSnaps = await Promise.all(
+          sharingIds.map((sid) => get(ref(database, `sharings/${sid}`))),
+        );
 
-      const active = sharingSnaps
-        .filter((s) => s.exists() && s.val().isActive)
-        .sort((a, b) => b.val().createdAt - a.val().createdAt);
+        const active = sharingSnaps
+          .filter((s) => s.exists() && (s.val() as { isActive: boolean }).isActive)
+          .sort(
+            (a, b) =>
+              (b.val() as { createdAt: number }).createdAt -
+              (a.val() as { createdAt: number }).createdAt,
+          );
 
-      if (active.length > 0) {
-        navigate(`/sharing/${active[0].key}`, { replace: true });
-      } else {
-        navigate('/overview', { replace: true });
-      }
-    }).finally(() => setChecked(true));
+        if (active.length > 0) {
+          navigate(`/sharing/${active[0].key}`, { replace: true });
+        } else {
+          navigate('/overview', { replace: true });
+        }
+      })
+      .finally(() => setChecked(true));
   }, [currentUser, navigate]);
 
   if (!checked) {

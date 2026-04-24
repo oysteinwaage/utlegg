@@ -5,15 +5,22 @@ import { IconAlertCircle } from '@tabler/icons-react';
 import { database } from '../../firebase/config';
 import { useAuth } from '../../contexts/AuthContext';
 import { CURRENCIES } from '../../services/currencyService';
+import type { UserProfile } from '../../types';
 
-export default function CreateSharingModal({ opened, onClose, onCreated }) {
+interface CreateSharingModalProps {
+  opened: boolean;
+  onClose: () => void;
+  onCreated: (id: string) => void;
+}
+
+export default function CreateSharingModal({ opened, onClose, onCreated }: CreateSharingModalProps) {
   const { currentUser, userProfile } = useAuth();
-  const [name, setName] = useState('');
-  const [currency, setCurrency] = useState('NOK');
-  const [otherUserId, setOtherUserId] = useState(null);
-  const [allUsers, setAllUsers] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [name, setName]             = useState('');
+  const [currency, setCurrency]     = useState('NOK');
+  const [otherUserId, setOtherUserId] = useState<string | null>(null);
+  const [allUsers, setAllUsers]     = useState<{ value: string; label: string }[]>([]);
+  const [loading, setLoading]       = useState(false);
+  const [error, setError]           = useState('');
   const [fetchingUsers, setFetchingUsers] = useState(false);
 
   useEffect(() => {
@@ -21,14 +28,11 @@ export default function CreateSharingModal({ opened, onClose, onCreated }) {
     setFetchingUsers(true);
     get(ref(database, 'users'))
       .then((snapshot) => {
-        if (!snapshot.exists()) {
-          setAllUsers([]);
-          return;
-        }
-        const data = snapshot.val();
+        if (!snapshot.exists()) { setAllUsers([]); return; }
+        const data = snapshot.val() as Record<string, UserProfile>;
         const isAdmin = userProfile?.roles?.includes('ADMIN');
         const users = Object.entries(data)
-          .filter(([uid]) => uid !== currentUser.uid)
+          .filter(([uid]) => uid !== currentUser!.uid)
           .filter(([, user]) => isAdmin || !user.roles?.includes('TEST_USER'))
           .map(([uid, user]) => ({
             value: uid,
@@ -37,7 +41,7 @@ export default function CreateSharingModal({ opened, onClose, onCreated }) {
         setAllUsers(users);
       })
       .finally(() => setFetchingUsers(false));
-  }, [opened, currentUser.uid]);
+  }, [opened, currentUser, userProfile]);
 
   function handleClose() {
     setName('');
@@ -55,32 +59,30 @@ export default function CreateSharingModal({ opened, onClose, onCreated }) {
     setError('');
 
     try {
-      const participants = {
-        [currentUser.uid]: true,
+      const participants: Record<string, true> = {
+        [currentUser!.uid]: true,
         [otherUserId]: true,
       };
 
       const sharingsRef = ref(database, 'sharings');
-      const newRef = push(sharingsRef);
+      const newRef      = push(sharingsRef);
       const sharingData = {
         name: name.trim(),
         defaultCurrency: currency,
         participants,
-        createdBy: currentUser.uid,
+        createdBy: currentUser!.uid,
         createdAt: Date.now(),
         isActive: true,
         lastSettlementAt: null,
       };
 
       await set(newRef, sharingData);
-
-      // Index each participant's sharings for fast lookup
       await Promise.all([
-        set(ref(database, `userSharings/${currentUser.uid}/${newRef.key}`), true),
+        set(ref(database, `userSharings/${currentUser!.uid}/${newRef.key}`), true),
         set(ref(database, `userSharings/${otherUserId}/${newRef.key}`), true),
       ]);
 
-      onCreated(newRef.key);
+      onCreated(newRef.key!);
       handleClose();
     } catch (err) {
       setError('Noe gikk galt. Prøv igjen.');
@@ -90,10 +92,7 @@ export default function CreateSharingModal({ opened, onClose, onCreated }) {
     }
   }
 
-  const currencyOptions = CURRENCIES.map((c) => ({
-    value: c.value,
-    label: c.label,
-  }));
+  const currencyOptions = CURRENCIES.map((c) => ({ value: c.value, label: c.label }));
 
   return (
     <Modal opened={opened} onClose={handleClose} title="Ny deling" size="md" radius="md">
@@ -117,7 +116,7 @@ export default function CreateSharingModal({ opened, onClose, onCreated }) {
           label="Standard valuta"
           data={currencyOptions}
           value={currency}
-          onChange={setCurrency}
+          onChange={(val) => { if (val) setCurrency(val); }}
           radius="md"
           required
         />
@@ -133,7 +132,7 @@ export default function CreateSharingModal({ opened, onClose, onCreated }) {
             placeholder="Søk etter bruker…"
             data={allUsers}
             value={otherUserId}
-            onChange={setOtherUserId}
+            onChange={(val) => setOtherUserId(val)}
             radius="md"
             searchable
             nothingFoundMessage="Ingen andre brukere funnet. Den andre personen må logge inn én gang først."

@@ -1,8 +1,8 @@
 const WEEKDAYS_NO = ['søndag', 'mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag', 'lørdag'];
 
-export function formatTimestamp(timestamp) {
+export function formatTimestamp(timestamp: number): string {
   const date = new Date(timestamp);
-  const weekday = WEEKDAYS_NO[date.getDay()];
+  const weekday = WEEKDAYS_NO[date.getDay()] ?? '';
   const capitalized = weekday.charAt(0).toUpperCase() + weekday.slice(1);
   const dd = String(date.getDate()).padStart(2, '0');
   const mm = String(date.getMonth() + 1).padStart(2, '0');
@@ -10,7 +10,7 @@ export function formatTimestamp(timestamp) {
   return `${capitalized} ${dd}.${mm}.${yyyy}`;
 }
 
-export function formatShortDate(timestamp) {
+export function formatShortDate(timestamp: number): string {
   const date = new Date(timestamp);
   const dd = String(date.getDate()).padStart(2, '0');
   const mm = String(date.getMonth() + 1).padStart(2, '0');
@@ -18,17 +18,17 @@ export function formatShortDate(timestamp) {
   return `${dd}.${mm}.${yyyy}`;
 }
 
-export function formatCurrency(amount, currencyCode) {
+export function formatCurrency(amount: number | null | undefined, currencyCode: string): string {
   if (amount == null) return '–';
   const rounded = Math.round(amount * 100) / 100;
   return `${rounded.toLocaleString('nb-NO', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} ${currencyCode}`;
 }
 
-export function getInitials(name) {
+export function getInitials(name: string | null | undefined): string {
   if (!name) return '?';
   return name
     .split(' ')
-    .map((w) => w[0])
+    .map((w) => w[0] ?? '')
     .join('')
     .toUpperCase()
     .slice(0, 2);

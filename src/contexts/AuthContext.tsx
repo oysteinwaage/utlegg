@@ -1,17 +1,18 @@
-import { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { onAuthStateChanged, signInWithPopup, signOut, type User } from 'firebase/auth';
 import { ref, get, set } from 'firebase/database';
 import { auth, googleProvider, database } from '../firebase/config';
+import type { AuthContextValue, UserProfile } from '../types';
 
-const AuthContext = createContext(null);
+const AuthContext = createContext<AuthContextValue | null>(null);
 
-export function AuthProvider({ children }) {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [userProfile, setUserProfile] = useState(null);
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    return onAuthStateChanged(auth, async (user) => {
       if (user) {
         setCurrentUser(user);
         const profile = await ensureUserProfile(user);
@@ -22,21 +23,20 @@ export function AuthProvider({ children }) {
       }
       setLoading(false);
     });
-    return unsubscribe;
   }, []);
 
-  async function ensureUserProfile(user) {
+  async function ensureUserProfile(user: User): Promise<UserProfile> {
     const userRef = ref(database, `users/${user.uid}`);
     const snapshot = await get(userRef);
 
     if (snapshot.exists()) {
-      return snapshot.val();
+      return snapshot.val() as UserProfile;
     }
 
-    const profile = {
-      name: user.displayName || 'Ukjent bruker',
+    const profile: UserProfile = {
+      name: user.displayName ?? 'Ukjent bruker',
       email: user.email,
-      photoURL: user.photoURL || null,
+      photoURL: user.photoURL ?? null,
       roles: ['BRUKER'],
       createdAt: Date.now(),
     };
@@ -44,16 +44,16 @@ export function AuthProvider({ children }) {
     return profile;
   }
 
-  async function loginWithGoogle() {
+  async function loginWithGoogle(): Promise<User> {
     const result = await signInWithPopup(auth, googleProvider);
     return result.user;
   }
 
-  async function logout() {
+  async function logout(): Promise<void> {
     await signOut(auth);
   }
 
-  const value = { currentUser, userProfile, loading, loginWithGoogle, logout };
+  const value: AuthContextValue = { currentUser, userProfile, loading, loginWithGoogle, logout };
   return (
     <AuthContext.Provider value={value}>
       {!loading && children}
@@ -61,7 +61,7 @@ export function AuthProvider({ children }) {
   );
 }
 
-export function useAuth() {
+export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');
   return ctx;

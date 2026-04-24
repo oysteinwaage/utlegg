@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactElement } from 'react';
 import { Badge, Loader, Center, Avatar, Menu, ActionIcon, Tooltip } from '@mantine/core';
 import {
   IconUsers, IconShieldCheck, IconUser, IconFlask, IconPlus, IconX,
@@ -8,10 +8,15 @@ import { database } from '../firebase/config';
 import { useAuth } from '../contexts/AuthContext';
 import AppLayout from '../components/AppLayout';
 import { formatShortDate, getInitials } from '../utils/formatUtils';
+import type { Role, UserProfile } from '../types';
 
-const ALL_ROLES = ['ADMIN', 'BRUKER', 'TEST_USER'];
+interface AdminUser extends UserProfile {
+  uid: string;
+}
 
-const ROLE_META = {
+const ALL_ROLES: Role[] = ['ADMIN', 'BRUKER', 'TEST_USER'];
+
+const ROLE_META: Record<string, { color: string; icon: ReactElement | null }> = {
   ADMIN:     { color: 'violet', icon: <IconShieldCheck size={11} /> },
   BRUKER:    { color: 'blue',   icon: <IconUser size={11} /> },
   TEST_USER: { color: 'orange', icon: <IconFlask size={11} /> },
@@ -19,22 +24,23 @@ const ROLE_META = {
 
 export default function AdminPage() {
   const { currentUser } = useAuth();
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(null);
+  const [updating, setUpdating] = useState<string | null>(null);
 
   useEffect(() => {
     get(ref(database, 'users'))
       .then((snap) => {
         if (!snap.exists()) { setUsers([]); return; }
-        const list = Object.entries(snap.val()).map(([uid, data]) => ({ uid, ...data }));
+        const list = Object.entries(snap.val() as Record<string, UserProfile>)
+          .map(([uid, data]) => ({ uid, ...data }));
         list.sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
         setUsers(list);
       })
       .finally(() => setLoading(false));
   }, []);
 
-  async function saveRoles(uid, newRoles) {
+  async function saveRoles(uid: string, newRoles: Role[]) {
     setUpdating(uid);
     try {
       await update(ref(database, `users/${uid}`), { roles: newRoles });
@@ -44,16 +50,16 @@ export default function AdminPage() {
     }
   }
 
-  function handleRemove(uid, role) {
+  function handleRemove(uid: string, role: string) {
     const user = users.find((u) => u.uid === uid);
-    const current = user.roles ?? ['BRUKER'];
-    if (current.length <= 1) return; // aldri fjern siste rolle
-    saveRoles(uid, current.filter((r) => r !== role));
+    const current = user?.roles ?? ['BRUKER'];
+    if (current.length <= 1) return;
+    saveRoles(uid, current.filter((r) => r !== role) as Role[]);
   }
 
-  function handleAdd(uid, role) {
+  function handleAdd(uid: string, role: Role) {
     const user = users.find((u) => u.uid === uid);
-    const current = user.roles ?? ['BRUKER'];
+    const current = user?.roles ?? ['BRUKER'];
     if (current.includes(role)) return;
     saveRoles(uid, [...current, role]);
   }
@@ -106,7 +112,7 @@ export default function AdminPage() {
           {users.map((user) => {
             const roles = user.roles ?? ['BRUKER'];
             const available = ALL_ROLES.filter((r) => !roles.includes(r));
-            const isSelf = user.uid === currentUser.uid;
+            const isSelf = user.uid === currentUser!.uid;
             const isBusy = updating === user.uid;
 
             return (
