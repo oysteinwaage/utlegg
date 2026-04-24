@@ -384,16 +384,19 @@ body {
 // ── Sharing Page ──────────────────────────────────────────────────
 .sharing-page {
   &__header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
     margin-bottom: $space-xl;
+  }
+
+  &__top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     gap: $space-md;
-    flex-wrap: wrap;
+    margin-bottom: $space-sm;
   }
 
   &__title-area {
-    flex: 1;
+    // intentionally left as block — title and badge stack naturally
   }
 
   &__back-link {
@@ -403,7 +406,7 @@ body {
     font-size: $font-size-sm;
     color: $color-text-secondary;
     text-decoration: none;
-    margin-bottom: $space-sm;
+    white-space: nowrap;
     transition: color 0.15s;
 
     &:hover {
@@ -435,7 +438,7 @@ body {
     display: flex;
     align-items: center;
     gap: $space-sm;
-    flex-wrap: wrap;
+    flex-shrink: 0;
   }
 }
 

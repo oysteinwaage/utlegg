@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Button, Modal, Text, Stack, Center, Loader, Badge } from '@mantine/core';
+import { Button, ActionIcon, Tooltip, Modal, Text, Stack, Center, Loader, Badge } from '@mantine/core';
 import {
   IconPlus, IconArrowLeft, IconX, IconRefresh, IconAlertTriangle, IconTrophy, IconTrash,
 } from '@tabler/icons-react';
@@ -134,7 +134,7 @@ function ClosingStatus({ participants, participantIds, totals, defaultCurrency }
 
 export default function SharingPage() {
   const { id } = useParams<{ id: string }>();
-  const { currentUser, userProfile } = useAuth();
+  const { currentUser, currentUserId, userProfile } = useAuth();
   const navigate = useNavigate();
   const isAdmin = userProfile?.roles?.includes('ADMIN') ?? false;
 
@@ -154,7 +154,7 @@ export default function SharingPage() {
     const unsub = onValue(sharingRef, (snap) => {
       if (!snap.exists()) { navigate('/overview'); return; }
       const data = snap.val() as Omit<Sharing, 'id'>;
-      if (!data.participants?.[currentUser!.uid]) { navigate('/overview'); return; }
+      if (!data.participants?.[currentUserId]) { navigate('/overview'); return; }
       setSharing({ id: snap.key!, ...data });
       setLoading(false);
     });
@@ -198,7 +198,7 @@ export default function SharingPage() {
       amount,
       currency,
       amountInDefault,
-      paidBy: currentUser!.uid,
+      paidBy: currentUserId,
       timestamp: Date.now(),
     };
     await set(newRef, entry);
@@ -269,52 +269,56 @@ export default function SharingPage() {
     <AppLayout>
       {/* Header */}
       <div className="sharing-page__header">
-        <div className="sharing-page__title-area">
+        <div className="sharing-page__top-row">
           <Link to="/overview" className="sharing-page__back-link">
             <IconArrowLeft size={14} />
             Tilbake til oversikt
           </Link>
-          <h1 className="sharing-page__title">{sharing.name}</h1>
-          <div className="sharing-page__currency-badge">{sharing.defaultCurrency}</div>
+
+          <div className="sharing-page__actions">
+            {isActive && (
+              <>
+                {/* Desktop */}
+                <Button visibleFrom="xs" variant="light" color="violet" radius="md" leftSection={<IconRefresh size={16} />} onClick={() => setSettlementConfirmOpen(true)}>
+                  Avregning
+                </Button>
+                <Button visibleFrom="xs" variant="light" color="red" radius="md" leftSection={<IconX size={16} />} onClick={() => setCloseConfirmOpen(true)}>
+                  Avslutt
+                </Button>
+                {/* Mobile */}
+                <Tooltip hiddenFrom="xs" label="Avregning" position="bottom" withArrow>
+                  <ActionIcon hiddenFrom="xs" variant="light" color="violet" size="lg" radius="md" aria-label="Avregning" onClick={() => setSettlementConfirmOpen(true)}>
+                    <IconRefresh size={18} />
+                  </ActionIcon>
+                </Tooltip>
+                <Tooltip hiddenFrom="xs" label="Avslutt" position="bottom" withArrow>
+                  <ActionIcon hiddenFrom="xs" variant="light" color="red" size="lg" radius="md" aria-label="Avslutt" onClick={() => setCloseConfirmOpen(true)}>
+                    <IconX size={18} />
+                  </ActionIcon>
+                </Tooltip>
+              </>
+            )}
+            {!isActive && (
+              <>
+                <Badge color="gray" variant="light" size="lg" radius="md">Avsluttet</Badge>
+                {/* Desktop */}
+                <Button visibleFrom="xs" variant="light" color="red" radius="md" leftSection={<IconTrash size={16} />} onClick={() => setDeleteConfirmOpen(true)}>
+                  Slett
+                </Button>
+                {/* Mobile */}
+                <Tooltip hiddenFrom="xs" label="Slett deling" position="bottom" withArrow>
+                  <ActionIcon hiddenFrom="xs" variant="light" color="red" size="lg" radius="md" aria-label="Slett deling" onClick={() => setDeleteConfirmOpen(true)}>
+                    <IconTrash size={18} />
+                  </ActionIcon>
+                </Tooltip>
+              </>
+            )}
+          </div>
         </div>
 
-        <div className="sharing-page__actions">
-          {isActive && (
-            <>
-              <Button
-                variant="light"
-                color="violet"
-                radius="md"
-                leftSection={<IconRefresh size={16} />}
-                onClick={() => setSettlementConfirmOpen(true)}
-              >
-                Avregning
-              </Button>
-              <Button
-                variant="light"
-                color="red"
-                radius="md"
-                leftSection={<IconX size={16} />}
-                onClick={() => setCloseConfirmOpen(true)}
-              >
-                Avslutt
-              </Button>
-            </>
-          )}
-          {!isActive && (
-            <>
-              <Badge color="gray" variant="light" size="lg" radius="md">Avsluttet</Badge>
-              <Button
-                variant="light"
-                color="red"
-                radius="md"
-                leftSection={<IconTrash size={16} />}
-                onClick={() => setDeleteConfirmOpen(true)}
-              >
-                Slett
-              </Button>
-            </>
-          )}
+        <div className="sharing-page__title-area">
+          <h1 className="sharing-page__title">{sharing.name}</h1>
+          <div className="sharing-page__currency-badge">{sharing.defaultCurrency}</div>
         </div>
       </div>
 
@@ -330,7 +334,7 @@ export default function SharingPage() {
               total={total}
               diff={diff}
               defaultCurrency={sharing.defaultCurrency}
-              isCurrentUser={uid === currentUser!.uid}
+              isCurrentUser={uid === currentUserId}
             />
           );
         })}
@@ -370,7 +374,7 @@ export default function SharingPage() {
         sharingId={id!}
         participants={participants}
         defaultCurrency={sharing.defaultCurrency}
-        currentUserId={currentUser!.uid}
+        currentUserId={currentUserId}
         isAdmin={isAdmin}
         lastSettlementAt={sharing.lastSettlementAt ?? 0}
       />

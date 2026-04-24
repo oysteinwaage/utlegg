@@ -1,6 +1,11 @@
-import type { User } from 'firebase/auth';
-
 export type Role = 'ADMIN' | 'BRUKER' | 'TEST_USER';
+
+export interface AuthUser {
+  uid: string;
+  displayName: string | null;
+  email: string | null;
+  photoURL: string | null;
+}
 
 export interface UserProfile {
   name: string;
@@ -52,9 +57,10 @@ export interface Sharing {
 }
 
 export interface AuthContextValue {
-  currentUser: User | null;
+  currentUser: AuthUser | null;
+  currentUserId: string;
   userProfile: UserProfile | null;
   loading: boolean;
-  loginWithGoogle: () => Promise<User>;
+  loginWithGoogle: () => Promise<AuthUser>;
   logout: () => Promise<void>;
 }
