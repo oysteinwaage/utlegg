@@ -4,9 +4,9 @@ import {
   Button, Modal, Text, Stack, Center, Loader, Badge,
 } from '@mantine/core';
 import {
-  IconPlus, IconArrowLeft, IconX, IconRefresh, IconAlertTriangle, IconTrophy,
+  IconPlus, IconArrowLeft, IconX, IconRefresh, IconAlertTriangle, IconTrophy, IconTrash,
 } from '@tabler/icons-react';
-import { ref, onValue, push, set, update, get } from 'firebase/database';
+import { ref, onValue, push, set, update, get, remove } from 'firebase/database';
 import { database } from '../firebase/config';
 import { useAuth } from '../contexts/AuthContext';
 import AppLayout from '../components/AppLayout';
@@ -116,6 +116,7 @@ export default function SharingPage() {
   const [addExpenseOpen, setAddExpenseOpen] = useState(false);
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
   const [settlementConfirmOpen, setSettlementConfirmOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   // Subscribe to sharing in real-time
   useEffect(() => {
@@ -223,6 +224,15 @@ export default function SharingPage() {
     setCloseConfirmOpen(false);
   }
 
+  async function handleDelete() {
+    const participantIds = Object.keys(sharing.participants || {});
+    await remove(ref(database, `sharings/${id}`));
+    await Promise.all(
+      participantIds.map((uid) => remove(ref(database, `userSharings/${uid}/${id}`)))
+    );
+    navigate('/overview');
+  }
+
   // ── Render ───────────────────────────────────────────────────────────────────
 
   if (loading || !sharing) {
@@ -276,9 +286,20 @@ export default function SharingPage() {
             </>
           )}
           {!isActive && (
-            <Badge color="gray" variant="light" size="lg" radius="md">
-              Avsluttet
-            </Badge>
+            <>
+              <Badge color="gray" variant="light" size="lg" radius="md">
+                Avsluttet
+              </Badge>
+              <Button
+                variant="light"
+                color="red"
+                radius="md"
+                leftSection={<IconTrash size={16} />}
+                onClick={() => setDeleteConfirmOpen(true)}
+              >
+                Slett
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -419,6 +440,40 @@ export default function SharingPage() {
             variant="subtle"
             radius="md"
             onClick={() => setCloseConfirmOpen(false)}
+          >
+            Avbryt
+          </Button>
+        </Stack>
+      </Modal>
+
+      {/* Delete Sharing Confirm Modal */}
+      <Modal
+        opened={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        title="Slett deling"
+        size="sm"
+        radius="md"
+      >
+        <Stack gap="md">
+          <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+            <IconAlertTriangle size={20} color="#D97706" style={{ flexShrink: 0, marginTop: 2 }} />
+            <Text size="sm">
+              Er du sikker på at du vil slette <strong>{sharing.name}</strong>? All data,
+              inkludert alle utlegg, slettes permanent og kan ikke gjenopprettes.
+            </Text>
+          </div>
+          <Button
+            color="red"
+            radius="md"
+            onClick={handleDelete}
+            leftSection={<IconTrash size={16} />}
+          >
+            Ja, slett delingen
+          </Button>
+          <Button
+            variant="subtle"
+            radius="md"
+            onClick={() => setDeleteConfirmOpen(false)}
           >
             Avbryt
           </Button>

@@ -227,6 +227,41 @@ body {
 }
 
 // ── Sharing Card ──────────────────────────────────────────────────
+.sharing-card-wrapper {
+  position: relative;
+
+  &--closed:hover .sharing-card__delete-btn {
+    opacity: 1;
+  }
+}
+
+.sharing-card__delete-btn {
+  position: absolute;
+  top: $space-sm;
+  right: $space-sm;
+  width: 28px;
+  height: 28px;
+  border-radius: $radius-sm;
+  border: none;
+  background: $color-danger-bg;
+  color: $color-danger;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s;
+  z-index: 1;
+
+  &:hover {
+    background: darken(#FEF3F2, 5%);
+  }
+
+  @media (hover: none) {
+    opacity: 1;
+  }
+}
+
 .sharing-card {
   background: $color-surface;
   border: 1px solid $color-border;

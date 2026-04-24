@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Loader, Center } from '@mantine/core';
 import { IconPlus, IconLayoutGrid } from '@tabler/icons-react';
-import { ref, get } from 'firebase/database';
+import { ref, get, remove } from 'firebase/database';
 import { database } from '../firebase/config';
 import { useAuth } from '../contexts/AuthContext';
 import AppLayout from '../components/AppLayout';
@@ -66,6 +66,15 @@ export default function OverviewPage() {
     navigate(`/sharing/${newId}`);
   }
 
+  async function handleDelete(sharing) {
+    const participantIds = Object.keys(sharing.participants || {});
+    await remove(ref(database, `sharings/${sharing.id}`));
+    await Promise.all(
+      participantIds.map((uid) => remove(ref(database, `userSharings/${uid}/${sharing.id}`)))
+    );
+    setSharings((prev) => prev.filter((s) => s.id !== sharing.id));
+  }
+
   if (loading) {
     return (
       <AppLayout>
@@ -111,6 +120,7 @@ export default function OverviewPage() {
                 key={sharing.id}
                 sharing={sharing}
                 participantProfiles={participantProfiles}
+                onDelete={handleDelete}
               />
             ))}
           </div>
