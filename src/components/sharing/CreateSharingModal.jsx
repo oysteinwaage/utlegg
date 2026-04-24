@@ -7,7 +7,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { CURRENCIES } from '../../services/currencyService';
 
 export default function CreateSharingModal({ opened, onClose, onCreated }) {
-  const { currentUser } = useAuth();
+  const { currentUser, userProfile } = useAuth();
   const [name, setName] = useState('');
   const [currency, setCurrency] = useState('NOK');
   const [otherUserId, setOtherUserId] = useState(null);
@@ -26,8 +26,10 @@ export default function CreateSharingModal({ opened, onClose, onCreated }) {
           return;
         }
         const data = snapshot.val();
+        const isAdmin = userProfile?.roles?.includes('ADMIN');
         const users = Object.entries(data)
           .filter(([uid]) => uid !== currentUser.uid)
+          .filter(([, user]) => isAdmin || !user.roles?.includes('TEST_USER'))
           .map(([uid, user]) => ({
             value: uid,
             label: `${user.name} (${user.email})`,
