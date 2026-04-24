@@ -539,6 +539,182 @@ body {
   }
 }
 
+// ── Admin Page ────────────────────────────────────────────────────
+.admin-page {
+  &__header {
+    margin-bottom: $space-xl;
+  }
+
+  &__title {
+    font-size: $font-size-2xl;
+    font-weight: 800;
+    color: $color-text-primary;
+    margin: 0;
+  }
+
+  &__subtitle {
+    font-size: $font-size-base;
+    color: $color-text-secondary;
+    margin: $space-xs 0 0;
+  }
+
+  &__empty {
+    text-align: center;
+    color: $color-text-muted;
+    padding: $space-2xl;
+  }
+}
+
+.admin-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: $space-md;
+  margin-bottom: $space-xl;
+
+  @media (max-width: $bp-sm) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  &__card {
+    background: $color-surface;
+    border: 1px solid $color-border;
+    border-radius: $radius-lg;
+    padding: $space-md;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $space-xs;
+    color: $color-text-secondary;
+
+    &--violet { color: $color-primary; background: #FAF8FF; border-color: #E9E3FF; }
+    &--blue   { color: #1D6FA4; background: #EFF8FF; border-color: #B2DDFF; }
+    &--orange { color: #B54708; background: $color-warning-bg; border-color: $color-warning-border; }
+  }
+
+  &__value {
+    font-size: $font-size-2xl;
+    font-weight: 800;
+    color: inherit;
+    line-height: 1;
+  }
+
+  &__label {
+    font-size: $font-size-xs;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+}
+
+.admin-user-list {
+  background: $color-surface;
+  border: 1px solid $color-border;
+  border-radius: $radius-lg;
+  overflow: hidden;
+}
+
+.admin-user-row {
+  display: flex;
+  align-items: center;
+  gap: $space-md;
+  padding: $space-md $space-lg;
+  border-bottom: 1px solid $color-border;
+  transition: background 0.1s, opacity 0.15s;
+
+  &:last-child { border-bottom: none; }
+  &:hover { background: #FAFAFA; }
+
+  &--busy {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  // On mobile: 2-column grid — avatar on the left, everything else stacked on the right
+  @media (max-width: $bp-sm) {
+    display: grid;
+    grid-template-columns: 40px 1fr;
+    grid-template-areas:
+      "avatar info"
+      "avatar roles"
+      "avatar meta";
+    column-gap: $space-md;
+    row-gap: 4px;
+    align-items: start;
+  }
+
+  &__avatar {
+    flex-shrink: 0;
+
+    @media (max-width: $bp-sm) {
+      grid-area: avatar;
+      align-self: center;
+    }
+  }
+
+  &__info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    @media (max-width: $bp-sm) {
+      grid-area: info;
+    }
+  }
+
+  &__name {
+    font-size: $font-size-base;
+    font-weight: 600;
+    color: $color-text-primary;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    gap: $space-xs;
+  }
+
+  &__you {
+    font-size: $font-size-xs;
+    font-weight: 400;
+    color: $color-text-muted;
+  }
+
+  &__email {
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__roles {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+    flex-shrink: 0;
+
+    @media (max-width: $bp-sm) {
+      grid-area: roles;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+
+  &__meta {
+    font-size: $font-size-xs;
+    color: $color-text-muted;
+    white-space: nowrap;
+    flex-shrink: 0;
+
+    @media (max-width: $bp-md) {
+      display: none;
+    }
+  }
+}
+
 // ── Action Bar ────────────────────────────────────────────────────
 .action-bar {
   display: flex;

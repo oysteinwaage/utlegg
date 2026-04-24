@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom';
 import { Menu, Avatar, ActionIcon } from '@mantine/core';
-import { IconLogout, IconLayoutGrid, IconReceipt2 } from '@tabler/icons-react';
+import { IconLogout, IconLayoutGrid, IconReceipt2, IconShieldCheck } from '@tabler/icons-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getInitials } from '../utils/formatUtils';
 
 export default function AppLayout({ children }) {
-  const { currentUser, logout } = useAuth();
+  const { currentUser, userProfile, logout } = useAuth();
+  const isAdmin = userProfile?.roles?.includes('ADMIN');
 
   return (
     <>
@@ -41,6 +42,18 @@ export default function AppLayout({ children }) {
               >
                 Oversikt
               </Menu.Item>
+              {isAdmin && (
+                <>
+                  <Menu.Divider />
+                  <Menu.Item
+                    component={Link}
+                    to="/admin"
+                    leftSection={<IconShieldCheck size={14} />}
+                  >
+                    Admin
+                  </Menu.Item>
+                </>
+              )}
               <Menu.Divider />
               <Menu.Item
                 color="red"

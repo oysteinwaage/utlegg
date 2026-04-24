@@ -7,10 +7,18 @@ import { useAuth } from './contexts/AuthContext';
 import LoginPage from './pages/LoginPage';
 import OverviewPage from './pages/OverviewPage';
 import SharingPage from './pages/SharingPage';
+import AdminPage from './pages/AdminPage';
 
 function ProtectedRoute({ children }) {
   const { currentUser } = useAuth();
   if (!currentUser) return <Navigate to="/login" replace />;
+  return children;
+}
+
+function AdminRoute({ children }) {
+  const { currentUser, userProfile } = useAuth();
+  if (!currentUser) return <Navigate to="/login" replace />;
+  if (userProfile && !userProfile.roles?.includes('ADMIN')) return <Navigate to="/" replace />;
   return children;
 }
 
@@ -81,6 +89,14 @@ export default function App() {
           <ProtectedRoute>
             <SharingPage />
           </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin"
+        element={
+          <AdminRoute>
+            <AdminPage />
+          </AdminRoute>
         }
       />
       <Route path="*" element={<Navigate to="/" replace />} />
