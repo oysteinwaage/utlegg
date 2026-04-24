@@ -399,7 +399,7 @@ body {
   margin-bottom: $space-xl;
 
   @media (max-width: $bp-sm) {
-    grid-template-columns: 1fr;
+    gap: $space-sm;
   }
 }
 
@@ -409,11 +409,21 @@ body {
   border-radius: $radius-lg;
   padding: $space-lg;
 
+  @media (max-width: $bp-sm) {
+    padding: $space-sm $space-sm $space-md;
+    border-radius: $radius-md;
+  }
+
   &__header {
     display: flex;
     align-items: center;
     gap: $space-sm;
     margin-bottom: $space-md;
+
+    @media (max-width: $bp-sm) {
+      gap: 6px;
+      margin-bottom: $space-sm;
+    }
   }
 
   &__avatar {
@@ -430,6 +440,12 @@ body {
     overflow: hidden;
     flex-shrink: 0;
 
+    @media (max-width: $bp-sm) {
+      width: 28px;
+      height: 28px;
+      font-size: $font-size-xs;
+    }
+
     img {
       width: 100%;
       height: 100%;
@@ -442,6 +458,14 @@ body {
     font-weight: 600;
     color: $color-text-primary;
     margin: 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    @media (max-width: $bp-sm) {
+      font-size: $font-size-sm;
+    }
 
     span {
       font-size: $font-size-xs;
@@ -456,6 +480,10 @@ body {
     font-weight: 800;
     color: $color-text-primary;
     margin: 0 0 4px;
+
+    @media (max-width: $bp-sm) {
+      font-size: $font-size-xl;
+    }
   }
 
   &__diff {
