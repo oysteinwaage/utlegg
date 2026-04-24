@@ -810,9 +810,20 @@ body {
   align-items: center;
   gap: $space-md;
   transition: box-shadow 0.15s;
+  position: relative;
 
   &:hover {
     box-shadow: $shadow-sm;
+  }
+
+  &__edit-btn {
+    flex-shrink: 0;
+    opacity: 0.35;
+    transition: opacity 0.15s;
+  }
+
+  &:hover &__edit-btn {
+    opacity: 1;
   }
 
   &__icon {

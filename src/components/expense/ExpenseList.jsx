@@ -1,7 +1,7 @@
 import ExpenseItem from './ExpenseItem';
 import SettlementItem from './SettlementItem';
 
-export default function ExpenseList({ expenses, sharingId, participants, defaultCurrency }) {
+export default function ExpenseList({ expenses, sharingId, participants, defaultCurrency, currentUserId, isAdmin, lastSettlementAt }) {
   if (!expenses || Object.keys(expenses).length === 0) {
     return (
       <div className="expense-list">
@@ -37,7 +37,16 @@ export default function ExpenseList({ expenses, sharingId, participants, default
         }
 
         return (
-          <ExpenseItem key={id} expense={enriched} participants={participants} />
+          <ExpenseItem
+            key={id}
+            expense={enriched}
+            expenseId={id}
+            sharingId={sharingId}
+            participants={participants}
+            currentUserId={currentUserId}
+            isAdmin={isAdmin}
+            lastSettlementAt={lastSettlementAt}
+          />
         );
       })}
     </div>

@@ -70,7 +70,7 @@ function ParticipantCard({ profile, total, diff, defaultCurrency, isCurrentUser 
       <p className="participant-card__total">{formatCurrency(total, defaultCurrency)}</p>
       {diffDisplay && (
         <p className={`participant-card__diff ${diffClass}`}>
-          {diff > 0 ? 'Til gode' : 'Skyldig'}: {diffDisplay}
+          {diffDisplay}
         </p>
       )}
     </div>
@@ -106,7 +106,8 @@ function ClosingStatus({ participants, participantIds, totals, defaultCurrency }
 
 export default function SharingPage() {
   const { id } = useParams();
-  const { currentUser } = useAuth();
+  const { currentUser, userProfile } = useAuth();
+  const isAdmin = userProfile?.roles?.includes('ADMIN') ?? false;
   const navigate = useNavigate();
 
   const [sharing, setSharing] = useState(null);
@@ -356,6 +357,9 @@ export default function SharingPage() {
         sharingId={id}
         participants={participants}
         defaultCurrency={sharing.defaultCurrency}
+        currentUserId={currentUser.uid}
+        isAdmin={isAdmin}
+        lastSettlementAt={sharing.lastSettlementAt ?? 0}
       />
 
       {/* Add Expense Modal */}
