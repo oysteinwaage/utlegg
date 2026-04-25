@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
-import { ref, get, set } from 'firebase/database';
+import { ref, get, set, update } from 'firebase/database';
 import { auth, googleProvider, database } from '../firebase/config';
 import type { AuthContextValue, AuthUser, UserProfile } from '../types';
 
@@ -61,8 +61,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await signOut(auth);
   }
 
+  async function updateUserProfile(updates: Partial<UserProfile>): Promise<void> {
+    if (!currentUser) return;
+    await update(ref(database, `users/${currentUser.uid}`), updates);
+    setUserProfile((prev) => (prev ? { ...prev, ...updates } : prev));
+  }
+
   const currentUserId = currentUser ? currentUser.uid : '';
-  const value: AuthContextValue = { currentUser, currentUserId, userProfile, loading, loginWithGoogle, logout };
+  const value: AuthContextValue = { currentUser, currentUserId, userProfile, loading, loginWithGoogle, logout, updateUserProfile };
   return (
     <AuthContext.Provider value={value}>
       {!loading && children}

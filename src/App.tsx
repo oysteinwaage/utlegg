@@ -8,6 +8,7 @@ import LoginPage from './pages/LoginPage';
 import OverviewPage from './pages/OverviewPage';
 import SharingPage from './pages/SharingPage';
 import AdminPage from './pages/AdminPage';
+import ProfilePage from './pages/ProfilePage';
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { currentUser } = useAuth();
@@ -93,6 +94,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <SharingPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <ProfilePage />
           </ProtectedRoute>
         }
       />

@@ -11,6 +11,7 @@ import AppLayout from '../components/AppLayout';
 import ExpenseList from '../components/expense/ExpenseList';
 import AddExpenseModal from '../components/expense/AddExpenseModal';
 import { formatCurrency, formatShortDate, getInitials } from '../utils/formatUtils';
+import { getExchangeRate } from '../services/currencyService';
 import type { Sharing, UserProfile, AnyEntry, ExpenseRecord, SettlementRecord } from '../types';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -89,19 +90,24 @@ interface ParticipantCardProps {
   total: number;
   diff: number;
   defaultCurrency: string;
-  isCurrentUser: boolean;
+  preferredCurrency?: string;
+  conversionRate?: number;
 }
 
-function ParticipantCard({ profile, total, diff, defaultCurrency, isCurrentUser }: ParticipantCardProps) {
-  const diffDisplay = diff === 0
-    ? null
-    : diff > 0
-      ? `+${formatCurrency(diff, defaultCurrency)}`
-      : formatCurrency(diff, defaultCurrency);
+function ParticipantCard({ profile, total, diff, defaultCurrency, preferredCurrency, conversionRate = 1 }: ParticipantCardProps) {
+  const useConverted = preferredCurrency && preferredCurrency !== defaultCurrency;
+  const displayDiff = useConverted ? diff * conversionRate : diff;
+  const displayCurrency = (useConverted && preferredCurrency) ? preferredCurrency : defaultCurrency;
 
-  const diffClass = diff > 0
+  const diffDisplay = displayDiff === 0
+    ? null
+    : displayDiff > 0
+      ? `+${formatCurrency(displayDiff, displayCurrency)}`
+      : formatCurrency(displayDiff, displayCurrency);
+
+  const diffClass = displayDiff > 0
     ? 'participant-card__diff--positive'
-    : diff < 0
+    : displayDiff < 0
       ? 'participant-card__diff--negative'
       : 'participant-card__diff--neutral';
 
@@ -117,10 +123,10 @@ function ParticipantCard({ profile, total, diff, defaultCurrency, isCurrentUser 
         </div>
         <p className="participant-card__name">
           {profile?.name || 'Ukjent'}
-          {isCurrentUser && <span>deg</span>}
+          <span>{preferredCurrency ?? '-'}</span>
         </p>
       </div>
-      <p className="participant-card__total">{formatCurrency(total, defaultCurrency)}</p>
+      <p className="participant-card__total">{formatCurrency(useConverted ? total * conversionRate : total, displayCurrency)}</p>
       {diffDisplay && (
         <p className={`participant-card__diff ${diffClass}`}>{diffDisplay}</p>
       )}
@@ -136,12 +142,15 @@ interface ClosingStatusProps {
   totals: Record<string, number>;
   netBalances: Record<string, number>;
   defaultCurrency: string;
+  preferredCurrency?: string;
+  conversionRate?: number;
 }
 
-function ClosingStatus({ participants, participantIds, totals, netBalances, defaultCurrency }: ClosingStatusProps) {
+function ClosingStatus({ participants, participantIds, totals, netBalances, defaultCurrency, preferredCurrency, conversionRate = 1 }: ClosingStatusProps) {
   const { debtorId, creditorId, debtAmount } = computeSettlement(totals, netBalances, participantIds);
   const debtor   = participants[debtorId];
   const creditor = participants[creditorId];
+  const showConverted = preferredCurrency && preferredCurrency !== defaultCurrency && debtAmount > 0;
 
   return (
     <div className="closing-status">
@@ -155,6 +164,9 @@ function ClosingStatus({ participants, participantIds, totals, netBalances, defa
         <p className="closing-status__summary">
           <strong>{debtor?.name}</strong> skylder <strong>{creditor?.name}</strong>{' '}
           <strong>{formatCurrency(debtAmount, defaultCurrency)}</strong>
+          {showConverted && (
+            <> (≈ <strong>{formatCurrency(debtAmount * conversionRate, preferredCurrency!)}</strong>)</>
+          )}
         </p>
       )}
     </div>
@@ -177,6 +189,7 @@ export default function SharingPage() {
   const [closeConfirmOpen, setCloseConfirmOpen]     = useState(false);
   const [settlementConfirmOpen, setSettlementConfirmOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen]   = useState(false);
+  const [conversionRates, setConversionRates]       = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (!id) return;
@@ -219,6 +232,30 @@ export default function SharingPage() {
   );
 
   const grandTotal = Object.values(totals).reduce((s, v) => s + v, 0);
+  const preferredCurrency = userProfile?.preferredCurrency;
+
+  useEffect(() => {
+    if (!sharing || Object.keys(participants).length === 0) return;
+    const uniqueCurrencies = [
+      ...new Set(
+        Object.values(participants)
+          .map((p) => p.preferredCurrency)
+          .filter((c): c is string => !!c && c !== sharing.defaultCurrency),
+      ),
+    ];
+    if (uniqueCurrencies.length === 0) { setConversionRates({}); return; }
+    Promise.all(
+      uniqueCurrencies.map((currency) =>
+        getExchangeRate(sharing.defaultCurrency, currency)
+          .then((rate): [string, number | null] => [currency, rate])
+          .catch((): [string, number | null] => [currency, null]),
+      ),
+    ).then((results) => {
+      const rates: Record<string, number> = {};
+      results.forEach(([currency, rate]) => { if (rate !== null) rates[currency] = rate; });
+      setConversionRates(rates);
+    });
+  }, [sharing?.defaultCurrency, participants]);
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
@@ -363,6 +400,9 @@ export default function SharingPage() {
         {participantIds.map((uid) => {
           const total = totals[uid] || 0;
           const diff  = netBalances[uid] || 0;
+          const pCurrency = participants[uid]?.preferredCurrency;
+          const pRate = pCurrency !== undefined ? conversionRates[pCurrency] : undefined;
+          const showCurrency = pRate !== undefined || pCurrency === sharing.defaultCurrency;
           return (
             <ParticipantCard
               key={uid}
@@ -370,8 +410,10 @@ export default function SharingPage() {
               total={total}
               diff={diff}
               defaultCurrency={sharing.defaultCurrency}
-              isCurrentUser={uid === currentUserId}
+              preferredCurrency={showCurrency ? pCurrency : undefined}
+              conversionRate={pRate ?? 1}
             />
+
           );
         })}
       </div>
@@ -384,6 +426,8 @@ export default function SharingPage() {
           totals={totals}
           netBalances={netBalances}
           defaultCurrency={sharing.defaultCurrency}
+          preferredCurrency={preferredCurrency && conversionRates[preferredCurrency] !== undefined ? preferredCurrency : undefined}
+          conversionRate={preferredCurrency ? (conversionRates[preferredCurrency] ?? 1) : 1}
         />
       )}
 
@@ -446,8 +490,11 @@ export default function SharingPage() {
                 {debtAmount > 0 ? (
                   <>
                     <strong>{debtor?.name}</strong> skylder <strong>{creditor?.name}</strong>{' '}
-                    <strong>{formatCurrency(debtAmount, sharing.defaultCurrency)}</strong> basert på
-                    gjeldende utlegg. Summene nullstilles etter avregning.
+                    <strong>{formatCurrency(debtAmount, sharing.defaultCurrency)}</strong>
+                    {preferredCurrency && conversionRates[preferredCurrency] !== undefined && preferredCurrency !== sharing.defaultCurrency && (
+                      <> (≈ <strong>{formatCurrency(debtAmount * conversionRates[preferredCurrency], preferredCurrency)}</strong>)</>
+                    )}{' '}
+                    basert på gjeldende utlegg. Summene nullstilles etter avregning.
                   </>
                 ) : (
                   'Begge har betalt like mye. Summene nullstilles.'

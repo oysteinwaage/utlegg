@@ -13,6 +13,7 @@ export interface UserProfile {
   photoURL: string | null;
   roles: Role[];
   createdAt: number;
+  preferredCurrency?: string;
 }
 
 export interface ExpenseRecord {
@@ -64,4 +65,5 @@ export interface AuthContextValue {
   loading: boolean;
   loginWithGoogle: () => Promise<AuthUser>;
   logout: () => Promise<void>;
+  updateUserProfile: (updates: Partial<UserProfile>) => Promise<void>;
 }

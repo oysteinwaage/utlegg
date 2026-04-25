@@ -1,12 +1,13 @@
 import { type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Menu, Avatar, ActionIcon } from '@mantine/core';
-import { IconLogout, IconLayoutGrid, IconReceipt2, IconShieldCheck } from '@tabler/icons-react';
+import { IconLogout, IconLayoutGrid, IconReceipt2, IconShieldCheck, IconUser } from '@tabler/icons-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getInitials } from '../utils/formatUtils';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { currentUser, userProfile, logout } = useAuth();
+  const navigate = useNavigate();
   const isAdmin = userProfile?.roles?.includes('ADMIN');
 
   return (
@@ -34,13 +35,16 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               </ActionIcon>
             </Menu.Target>
             <Menu.Dropdown>
-              <Menu.Item component={Link} to="/overview" leftSection={<IconLayoutGrid size={14} />}>
+              <Menu.Item leftSection={<IconLayoutGrid size={14} />} onClick={() => navigate('/overview')}>
                 Oversikt
+              </Menu.Item>
+              <Menu.Item leftSection={<IconUser size={14} />} onClick={() => navigate('/profile')}>
+                Min side
               </Menu.Item>
               {isAdmin && (
                 <>
                   <Menu.Divider />
-                  <Menu.Item component={Link} to="/admin" leftSection={<IconShieldCheck size={14} />}>
+                  <Menu.Item leftSection={<IconShieldCheck size={14} />} onClick={() => navigate('/admin')}>
                     Admin
                   </Menu.Item>
                 </>

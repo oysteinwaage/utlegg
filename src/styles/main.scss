@@ -553,6 +553,93 @@ body {
       color: $color-text-muted;
     }
   }
+
+}
+
+// ── Profile Page ──────────────────────────────────────────────────
+.profile-page {
+  &__header {
+    margin-bottom: $space-xl;
+  }
+
+  &__title {
+    font-size: $font-size-2xl;
+    font-weight: 800;
+    color: $color-text-primary;
+    margin: 0;
+  }
+
+  &__card {
+    background: $color-surface;
+    border: 1px solid $color-border;
+    border-radius: $radius-lg;
+    padding: $space-xl;
+    max-width: 480px;
+  }
+
+  &__user-section {
+    display: flex;
+    align-items: center;
+    gap: $space-lg;
+    margin-bottom: $space-xl;
+    padding-bottom: $space-xl;
+    border-bottom: 1px solid $color-border;
+  }
+
+  &__avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, $color-primary, $color-primary-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: $font-size-xl;
+    font-weight: 700;
+    flex-shrink: 0;
+    overflow: hidden;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  &__user-info {
+    min-width: 0;
+  }
+
+  &__user-name {
+    font-size: $font-size-lg;
+    font-weight: 700;
+    color: $color-text-primary;
+    margin: 0 0 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__user-email {
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__section {
+    // no extra styles needed
+  }
+
+  &__section-title {
+    font-size: $font-size-lg;
+    font-weight: 700;
+    color: $color-text-primary;
+    margin: 0 0 $space-md;
+  }
 }
 
 // ── Admin Page ────────────────────────────────────────────────────
