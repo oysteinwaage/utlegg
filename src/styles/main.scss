@@ -811,13 +811,56 @@ body {
   padding: $space-md $space-lg;
   margin-bottom: $space-sm;
   display: flex;
-  align-items: center;
+  flex-direction: row;
+  align-items: stretch;
   gap: $space-md;
   transition: box-shadow 0.15s;
   position: relative;
 
   &:hover {
     box-shadow: $shadow-sm;
+  }
+
+  &__icon {
+    flex-shrink: 0;
+    width: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__icon-badge {
+    width: 40px;
+    height: 40px;
+    border-radius: $radius-sm;
+    background: #F0EBFF;
+    color: $color-primary;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: $space-xs;
+  }
+
+  &__description {
+    font-size: $font-size-base;
+    font-weight: 600;
+    color: $color-text-primary;
+    margin: 0;
+    word-break: break-word;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: $space-md;
   }
 
   &__edit-btn {
@@ -830,32 +873,9 @@ body {
     opacity: 1;
   }
 
-  &__icon {
-    width: 40px;
-    height: 40px;
-    border-radius: $radius-sm;
-    background: #F0EBFF;
-    color: $color-primary;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    font-size: 18px;
-  }
-
   &__body {
     flex: 1;
     min-width: 0;
-  }
-
-  &__description {
-    font-size: $font-size-base;
-    font-weight: 600;
-    color: $color-text-primary;
-    margin: 0 0 2px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 
   &__meta {
@@ -865,6 +885,12 @@ body {
     font-size: $font-size-sm;
     color: $color-text-secondary;
     flex-wrap: wrap;
+  }
+
+  &__split-label {
+    font-size: $font-size-xs;
+    color: $color-text-muted;
+    margin-top: 1px;
   }
 
   &__payer {
@@ -990,6 +1016,27 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+// ── Expense Split ─────────────────────────────────────────────────
+.expense-split {
+  background: #F8F7FF;
+  border: 1px solid #E9E3FF;
+  border-radius: $radius-md;
+  padding: $space-md;
+
+  &__participants {
+    margin-top: $space-sm;
+    display: flex;
+    flex-direction: column;
+    gap: $space-xs;
+    padding-top: $space-xs;
+    border-top: 1px solid #E9E3FF;
+  }
+
+  &__participant {
+    padding: $space-xs 0;
+  }
 }
 
 // ── Utility ───────────────────────────────────────────────────────

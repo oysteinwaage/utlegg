@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import {
-  Modal, Button, TextInput, NumberInput, Select, Stack, Alert, Loader, Text, Group,
+  Modal, Button, TextInput, NumberInput, Select, Stack, Alert, Loader, Text, Group, Switch, Divider,
 } from '@mantine/core';
 import { IconAlertCircle, IconArrowRight, IconTrash } from '@tabler/icons-react';
 import { ref, update, remove } from 'firebase/database';
 import { database } from '../../firebase/config';
 import { CURRENCIES, getExchangeRate } from '../../services/currencyService';
 import { formatCurrency } from '../../utils/formatUtils';
-import type { ExpenseRecord } from '../../types';
+import type { ExpenseRecord, UserProfile } from '../../types';
 
 interface EditExpenseModalProps {
   opened: boolean;
@@ -15,11 +15,14 @@ interface EditExpenseModalProps {
   expense: ExpenseRecord & { defaultCurrency?: string };
   expenseId: string;
   sharingId: string;
-  defaultCurrency?: string;
+  defaultCurrency: string;
+  participants: Record<string, UserProfile>;
+  participantIds: string[];
 }
 
 export default function EditExpenseModal({
-  opened, onClose, expense, expenseId, sharingId, defaultCurrency = 'NOK',
+  opened, onClose, expense, expenseId, sharingId, defaultCurrency,
+  participants, participantIds,
 }: EditExpenseModalProps) {
   const [description, setDescription]     = useState('');
   const [amount, setAmount]               = useState<number | string>('');
@@ -31,6 +34,8 @@ export default function EditExpenseModal({
   const [error, setError]                 = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting]           = useState(false);
+  const [splitEqually, setSplitEqually]   = useState(true);
+  const [selectedIds, setSelectedIds]     = useState<string[]>([]);
 
   useEffect(() => {
     if (opened && expense) {
@@ -40,6 +45,9 @@ export default function EditExpenseModal({
       setError('');
       setRateError('');
       setDeleteConfirm(false);
+      const hasCustomSplit = expense.splitAmong && expense.splitAmong.length > 0;
+      setSplitEqually(!hasCustomSplit);
+      setSelectedIds(hasCustomSplit ? expense.splitAmong! : [...participantIds]);
     }
   }, [opened, expense, defaultCurrency]);
 
@@ -60,10 +68,17 @@ export default function EditExpenseModal({
     onClose();
   }
 
+  function toggleParticipant(uid: string) {
+    setSelectedIds((prev) =>
+      prev.includes(uid) ? prev.filter((id) => id !== uid) : [...prev, uid],
+    );
+  }
+
   async function handleSave() {
     if (!description.trim()) return setError('Beskrivelse er påkrevd.');
     const numAmount = parseFloat(String(amount));
     if (!numAmount || numAmount <= 0) return setError('Beløp må være større enn 0.');
+    if (!splitEqually && selectedIds.length === 0) return setError('Minst én deltaker må være med i splittingen.');
 
     setSubmitting(true);
     setError('');
@@ -73,6 +88,7 @@ export default function EditExpenseModal({
         amount: numAmount,
         currency,
         amountInDefault: Math.round(numAmount * exchangeRate * 100) / 100,
+        splitAmong: splitEqually ? null : selectedIds,
       });
       handleClose();
     } catch {
@@ -154,13 +170,41 @@ export default function EditExpenseModal({
           </div>
         )}
 
+        <Divider />
+
+        <div className="expense-split">
+          <Switch
+            label="Deles likt"
+            checked={splitEqually}
+            onChange={(e) => {
+              setSplitEqually(e.currentTarget.checked);
+              if (e.currentTarget.checked) setSelectedIds([...participantIds]);
+            }}
+          />
+          {!splitEqually && (
+            <div className="expense-split__participants">
+              {participantIds.map((uid) => (
+                <div key={uid} className="expense-split__participant">
+                  <Switch
+                    label={participants[uid]?.name ?? 'Ukjent'}
+                    checked={selectedIds.includes(uid)}
+                    onChange={() => toggleParticipant(uid)}
+                  />
+                </div>
+              ))}
+              {selectedIds.length === 0 && (
+                <Text size="xs" c="red">Minst én deltaker må velges.</Text>
+              )}
+            </div>
+          )}
+        </div>
+
         <Button
           onClick={handleSave}
           loading={submitting}
           radius="md"
           color="violet"
           fullWidth
-          mt="xs"
           disabled={loadingRate}
         >
           Lagre endringer

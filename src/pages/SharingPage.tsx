@@ -29,6 +29,34 @@ function computeTotals(
     }, {});
 }
 
+function computeNetBalances(
+  expenses: Record<string, AnyEntry> | undefined,
+  lastSettlementAt: number | null,
+  participantIds: string[],
+): Record<string, number> {
+  const paid: Record<string, number> = {};
+  const owed: Record<string, number> = {};
+  participantIds.forEach((uid) => { paid[uid] = 0; owed[uid] = 0; });
+
+  if (expenses) {
+    Object.values(expenses)
+      .filter((e): e is ExpenseRecord => e.type === 'expense')
+      .filter((e) => !lastSettlementAt || e.timestamp > lastSettlementAt)
+      .forEach((e) => {
+        paid[e.paidBy] = (paid[e.paidBy] || 0) + e.amountInDefault;
+        const among = (e.splitAmong && e.splitAmong.length > 0) ? e.splitAmong : participantIds;
+        const share = e.amountInDefault / among.length;
+        among.forEach((uid) => { owed[uid] = (owed[uid] || 0) + share; });
+      });
+  }
+
+  const balances: Record<string, number> = {};
+  participantIds.forEach((uid) => {
+    balances[uid] = Math.round(((paid[uid] || 0) - (owed[uid] || 0)) * 100) / 100;
+  });
+  return balances;
+}
+
 interface SettlementResult {
   debtorId: string;
   creditorId: string;
@@ -41,14 +69,16 @@ interface SettlementResult {
 
 function computeSettlement(
   totals: Record<string, number>,
+  netBalances: Record<string, number>,
   participantIds: string[],
 ): SettlementResult {
   const [uid1, uid2] = participantIds as [string, string];
   const t1 = totals[uid1] || 0;
   const t2 = totals[uid2] || 0;
-  const debtAmount = Math.round((Math.abs(t1 - t2) / 2) * 100) / 100;
-  const debtorId   = t1 >= t2 ? uid2 : uid1;
-  const creditorId = t1 >= t2 ? uid1 : uid2;
+  const b1 = netBalances[uid1] || 0;
+  const debtAmount = Math.round(Math.abs(b1) * 100) / 100;
+  const debtorId   = b1 >= 0 ? uid2 : uid1;
+  const creditorId = b1 >= 0 ? uid1 : uid2;
   return { debtorId, creditorId, debtAmount, t1, t2, uid1, uid2 };
 }
 
@@ -104,11 +134,12 @@ interface ClosingStatusProps {
   participants: Record<string, UserProfile>;
   participantIds: string[];
   totals: Record<string, number>;
+  netBalances: Record<string, number>;
   defaultCurrency: string;
 }
 
-function ClosingStatus({ participants, participantIds, totals, defaultCurrency }: ClosingStatusProps) {
-  const { debtorId, creditorId, debtAmount } = computeSettlement(totals, participantIds);
+function ClosingStatus({ participants, participantIds, totals, netBalances, defaultCurrency }: ClosingStatusProps) {
+  const { debtorId, creditorId, debtAmount } = computeSettlement(totals, netBalances, participantIds);
   const debtor   = participants[debtorId];
   const creditor = participants[creditorId];
 
@@ -182,14 +213,18 @@ export default function SharingPage() {
     [sharing?.expenses, sharing?.lastSettlementAt],
   );
 
+  const netBalances = useMemo(
+    () => computeNetBalances(sharing?.expenses, sharing?.lastSettlementAt ?? null, participantIds),
+    [sharing?.expenses, sharing?.lastSettlementAt, participantIds],
+  );
+
   const grandTotal = Object.values(totals).reduce((s, v) => s + v, 0);
-  const fairShare  = grandTotal / 2;
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
   async function handleAddExpense({
-    description, amount, currency, amountInDefault,
-  }: { description: string; amount: number; currency: string; amountInDefault: number }) {
+    description, amount, currency, amountInDefault, splitAmong,
+  }: { description: string; amount: number; currency: string; amountInDefault: number; splitAmong?: string[] }) {
     const expensesRef = ref(database, `sharings/${id}/expenses`);
     const newRef = push(expensesRef);
     const entry: Omit<ExpenseRecord, 'defaultCurrency'> = {
@@ -200,13 +235,14 @@ export default function SharingPage() {
       amountInDefault,
       paidBy: currentUserId,
       timestamp: Date.now(),
+      ...(splitAmong && splitAmong.length > 0 ? { splitAmong } : {}),
     };
     await set(newRef, entry);
   }
 
   async function handleSettlement() {
     const { debtorId, creditorId, debtAmount, t1, t2, uid1, uid2 } =
-      computeSettlement(totals, participantIds);
+      computeSettlement(totals, netBalances, participantIds);
 
     const debtor   = participants[debtorId];
     const creditor = participants[creditorId];
@@ -326,7 +362,7 @@ export default function SharingPage() {
       <div className="participant-cards">
         {participantIds.map((uid) => {
           const total = totals[uid] || 0;
-          const diff  = total - fairShare;
+          const diff  = netBalances[uid] || 0;
           return (
             <ParticipantCard
               key={uid}
@@ -346,6 +382,7 @@ export default function SharingPage() {
           participants={participants}
           participantIds={participantIds}
           totals={totals}
+          netBalances={netBalances}
           defaultCurrency={sharing.defaultCurrency}
         />
       )}
@@ -373,6 +410,7 @@ export default function SharingPage() {
         expenses={sharing.expenses}
         sharingId={id!}
         participants={participants}
+        participantIds={participantIds}
         defaultCurrency={sharing.defaultCurrency}
         currentUserId={currentUserId}
         isAdmin={isAdmin}
@@ -385,6 +423,8 @@ export default function SharingPage() {
         onClose={() => setAddExpenseOpen(false)}
         onSubmit={handleAddExpense}
         defaultCurrency={sharing.defaultCurrency}
+        participants={participants}
+        participantIds={participantIds}
       />
 
       {/* Settlement Confirm Modal */}
@@ -398,7 +438,7 @@ export default function SharingPage() {
         <Stack gap="md">
           {(() => {
             if (participantIds.length < 2) return null;
-            const { debtorId, creditorId, debtAmount } = computeSettlement(totals, participantIds);
+            const { debtorId, creditorId, debtAmount } = computeSettlement(totals, netBalances, participantIds);
             const debtor   = participants[debtorId];
             const creditor = participants[creditorId];
             return (

@@ -23,6 +23,7 @@ export interface ExpenseRecord {
   amountInDefault: number;
   paidBy: string;
   timestamp: number;
+  splitAmong?: string[];
   defaultCurrency?: string;
 }
 

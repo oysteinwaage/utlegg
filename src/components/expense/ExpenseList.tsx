@@ -6,6 +6,7 @@ interface ExpenseListProps {
   expenses: Record<string, AnyEntry> | undefined;
   sharingId: string;
   participants: Record<string, UserProfile>;
+  participantIds: string[];
   defaultCurrency: string;
   currentUserId: string;
   isAdmin: boolean;
@@ -13,7 +14,7 @@ interface ExpenseListProps {
 }
 
 export default function ExpenseList({
-  expenses, sharingId, participants, defaultCurrency, currentUserId, isAdmin, lastSettlementAt,
+  expenses, sharingId, participants, participantIds, defaultCurrency, currentUserId, isAdmin, lastSettlementAt,
 }: ExpenseListProps) {
   if (!expenses || Object.keys(expenses).length === 0) {
     return (
@@ -61,6 +62,7 @@ export default function ExpenseList({
             expenseId={id}
             sharingId={sharingId}
             participants={participants}
+            participantIds={participantIds}
             currentUserId={currentUserId}
             isAdmin={isAdmin}
             lastSettlementAt={lastSettlementAt}

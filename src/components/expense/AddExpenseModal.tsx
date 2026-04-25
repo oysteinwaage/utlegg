@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import {
-  Modal, Button, TextInput, NumberInput, Select, Stack, Alert, Loader, Text, Group,
+  Modal, Button, TextInput, NumberInput, Select, Stack, Alert, Loader, Text, Group, Switch, Divider,
 } from '@mantine/core';
 import { IconAlertCircle, IconArrowRight } from '@tabler/icons-react';
 import { CURRENCIES, getExchangeRate } from '../../services/currencyService';
 import { formatCurrency } from '../../utils/formatUtils';
+import type { UserProfile } from '../../types';
 
 interface AddExpenseModalProps {
   opened: boolean;
@@ -14,12 +15,15 @@ interface AddExpenseModalProps {
     amount: number;
     currency: string;
     amountInDefault: number;
+    splitAmong?: string[];
   }) => Promise<void>;
-  defaultCurrency?: string;
+  defaultCurrency: string;
+  participants: Record<string, UserProfile>;
+  participantIds: string[];
 }
 
 export default function AddExpenseModal({
-  opened, onClose, onSubmit, defaultCurrency = 'NOK',
+  opened, onClose, onSubmit, defaultCurrency, participants, participantIds,
 }: AddExpenseModalProps) {
   const [description, setDescription] = useState('');
   const [amount, setAmount]           = useState<number | string>('');
@@ -29,6 +33,8 @@ export default function AddExpenseModal({
   const [rateError, setRateError]         = useState('');
   const [submitting, setSubmitting]       = useState(false);
   const [error, setError]                 = useState('');
+  const [splitEqually, setSplitEqually]   = useState(true);
+  const [selectedIds, setSelectedIds]     = useState<string[]>([]);
 
   useEffect(() => {
     if (opened) {
@@ -38,6 +44,8 @@ export default function AddExpenseModal({
       setDescription('');
       setError('');
       setRateError('');
+      setSplitEqually(true);
+      setSelectedIds([...participantIds]);
     }
   }, [opened, defaultCurrency]);
 
@@ -61,10 +69,17 @@ export default function AddExpenseModal({
     onClose();
   }
 
+  function toggleParticipant(uid: string) {
+    setSelectedIds((prev) =>
+      prev.includes(uid) ? prev.filter((id) => id !== uid) : [...prev, uid],
+    );
+  }
+
   async function handleSubmit() {
     if (!description.trim()) return setError('Beskrivelse er påkrevd.');
     const numAmount = parseFloat(String(amount));
     if (!numAmount || numAmount <= 0) return setError('Beløp må være større enn 0.');
+    if (!splitEqually && selectedIds.length === 0) return setError('Minst én deltaker må være med i splittingen.');
 
     setSubmitting(true);
     setError('');
@@ -74,6 +89,7 @@ export default function AddExpenseModal({
         amount: numAmount,
         currency,
         amountInDefault: Math.round(numAmount * exchangeRate * 100) / 100,
+        splitAmong: splitEqually ? undefined : selectedIds,
       });
       handleClose();
     } catch {
@@ -149,13 +165,41 @@ export default function AddExpenseModal({
           {currency !== defaultCurrency ? ` og konvertert til ${defaultCurrency}` : ''}.
         </Text>
 
+        <Divider />
+
+        <div className="expense-split">
+          <Switch
+            label="Deles likt"
+            checked={splitEqually}
+            onChange={(e) => {
+              setSplitEqually(e.currentTarget.checked);
+              if (e.currentTarget.checked) setSelectedIds([...participantIds]);
+            }}
+          />
+          {!splitEqually && (
+            <div className="expense-split__participants">
+              {participantIds.map((uid) => (
+                <div key={uid} className="expense-split__participant">
+                  <Switch
+                    label={participants[uid]?.name ?? 'Ukjent'}
+                    checked={selectedIds.includes(uid)}
+                    onChange={() => toggleParticipant(uid)}
+                  />
+                </div>
+              ))}
+              {selectedIds.length === 0 && (
+                <Text size="xs" c="red">Minst én deltaker må velges.</Text>
+              )}
+            </div>
+          )}
+        </div>
+
         <Button
           onClick={handleSubmit}
           loading={submitting}
           radius="md"
           color="violet"
           fullWidth
-          mt="xs"
           disabled={loadingRate}
         >
           Legg til utlegg
