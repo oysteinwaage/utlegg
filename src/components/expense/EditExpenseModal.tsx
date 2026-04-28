@@ -7,7 +7,8 @@ import { ref, update, remove } from 'firebase/database';
 import { database } from '../../firebase/config';
 import { CURRENCIES, getExchangeRate } from '../../services/currencyService';
 import { formatCurrency } from '../../utils/formatUtils';
-import type { ExpenseRecord, UserProfile } from '../../types';
+import { CATEGORIES, getCategoryIcon } from '../../utils/categoryUtils';
+import type { ExpenseRecord, UserProfile, ExpenseCategory } from '../../types';
 
 interface EditExpenseModalProps {
   opened: boolean;
@@ -36,6 +37,7 @@ export default function EditExpenseModal({
   const [deleting, setDeleting]           = useState(false);
   const [splitEqually, setSplitEqually]   = useState(true);
   const [selectedIds, setSelectedIds]     = useState<string[]>([]);
+  const [category, setCategory]           = useState<ExpenseCategory | null>(null);
 
   useEffect(() => {
     if (opened && expense) {
@@ -48,6 +50,7 @@ export default function EditExpenseModal({
       const hasCustomSplit = expense.splitAmong && expense.splitAmong.length > 0;
       setSplitEqually(!hasCustomSplit);
       setSelectedIds(hasCustomSplit ? expense.splitAmong! : [...participantIds]);
+      setCategory(expense.category ?? null);
     }
   }, [opened, expense, defaultCurrency]);
 
@@ -89,6 +92,7 @@ export default function EditExpenseModal({
         currency,
         amountInDefault: Math.round(numAmount * exchangeRate * 100) / 100,
         splitAmong: splitEqually ? null : selectedIds,
+        category: category ?? null,
       });
       handleClose();
     } catch {
@@ -169,6 +173,27 @@ export default function EditExpenseModal({
             )}
           </div>
         )}
+
+        <Select
+          label="Kategori"
+          placeholder="Velg kategori (valgfritt)"
+          data={CATEGORIES.map((c) => ({ value: c.value, label: c.label }))}
+          value={category}
+          onChange={(val) => setCategory(val as ExpenseCategory | null)}
+          clearable
+          radius="md"
+          leftSection={category ? (() => { const Icon = getCategoryIcon(category); return <Icon size={16} />; })() : undefined}
+          renderOption={({ option }) => {
+            const cat = CATEGORIES.find((c) => c.value === option.value);
+            const Icon = cat?.Icon;
+            return (
+              <Group gap="xs" wrap="nowrap">
+                {Icon && <Icon size={16} style={{ flexShrink: 0 }} />}
+                <span>{option.label}</span>
+              </Group>
+            );
+          }}
+        />
 
         <Divider />
 

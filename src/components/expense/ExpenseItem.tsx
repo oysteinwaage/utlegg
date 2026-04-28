@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { ActionIcon } from '@mantine/core';
-import { IconReceipt, IconPencil } from '@tabler/icons-react';
+import { IconPencil } from '@tabler/icons-react';
 import { formatTimestamp, formatCurrency } from '../../utils/formatUtils';
+import { getCategoryIcon } from '../../utils/categoryUtils';
 import EditExpenseModal from './EditExpenseModal';
 import type { ExpenseRecord, UserProfile } from '../../types';
 
@@ -33,6 +34,7 @@ export default function ExpenseItem({
   const showOriginal  = expense.currency !== expense.defaultCurrency && expense.currency;
   const afterSettlement = !lastSettlementAt || expense.timestamp > lastSettlementAt;
   const canEdit       = afterSettlement && (expense.paidBy === currentUserId || isAdmin);
+  const CategoryIcon  = getCategoryIcon(expense.category);
 
   const splitLabel = (() => {
     const among = expense.splitAmong;
@@ -50,7 +52,7 @@ export default function ExpenseItem({
       <div className="expense-item">
         <div className="expense-item__icon">
           <span className="expense-item__icon-badge">
-            <IconReceipt size={20} />
+            <CategoryIcon size={20} />
           </span>
         </div>
 

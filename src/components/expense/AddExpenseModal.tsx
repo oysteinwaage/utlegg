@@ -5,7 +5,8 @@ import {
 import { IconAlertCircle, IconArrowRight } from '@tabler/icons-react';
 import { CURRENCIES, getExchangeRate } from '../../services/currencyService';
 import { formatCurrency } from '../../utils/formatUtils';
-import type { UserProfile } from '../../types';
+import { CATEGORIES, getCategoryIcon } from '../../utils/categoryUtils';
+import type { UserProfile, ExpenseCategory } from '../../types';
 
 interface AddExpenseModalProps {
   opened: boolean;
@@ -16,6 +17,7 @@ interface AddExpenseModalProps {
     currency: string;
     amountInDefault: number;
     splitAmong?: string[];
+    category?: ExpenseCategory;
   }) => Promise<void>;
   defaultCurrency: string;
   participants: Record<string, UserProfile>;
@@ -35,6 +37,7 @@ export default function AddExpenseModal({
   const [error, setError]                 = useState('');
   const [splitEqually, setSplitEqually]   = useState(true);
   const [selectedIds, setSelectedIds]     = useState<string[]>([]);
+  const [category, setCategory]           = useState<ExpenseCategory | null>(null);
 
   useEffect(() => {
     if (opened) {
@@ -46,6 +49,7 @@ export default function AddExpenseModal({
       setRateError('');
       setSplitEqually(true);
       setSelectedIds([...participantIds]);
+      setCategory(null);
     }
   }, [opened, defaultCurrency]);
 
@@ -90,6 +94,7 @@ export default function AddExpenseModal({
         currency,
         amountInDefault: Math.round(numAmount * exchangeRate * 100) / 100,
         splitAmong: splitEqually ? undefined : selectedIds,
+        ...(category ? { category } : {}),
       });
       handleClose();
     } catch {
@@ -164,6 +169,27 @@ export default function AddExpenseModal({
           Utlegget registreres på deg. Beløpet lagres i {currency}
           {currency !== defaultCurrency ? ` og konvertert til ${defaultCurrency}` : ''}.
         </Text>
+
+        <Select
+          label="Kategori"
+          placeholder="Velg kategori (valgfritt)"
+          data={CATEGORIES.map((c) => ({ value: c.value, label: c.label }))}
+          value={category}
+          onChange={(val) => setCategory(val as ExpenseCategory | null)}
+          clearable
+          radius="md"
+          leftSection={category ? (() => { const Icon = getCategoryIcon(category); return <Icon size={16} />; })() : undefined}
+          renderOption={({ option }) => {
+            const cat = CATEGORIES.find((c) => c.value === option.value);
+            const Icon = cat?.Icon;
+            return (
+              <Group gap="xs" wrap="nowrap">
+                {Icon && <Icon size={16} style={{ flexShrink: 0 }} />}
+                <span>{option.label}</span>
+              </Group>
+            );
+          }}
+        />
 
         <Divider />
 

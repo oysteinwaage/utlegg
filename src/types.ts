@@ -1,5 +1,16 @@
 export type Role = 'ADMIN' | 'BRUKER' | 'TEST_USER';
 
+export type ExpenseCategory =
+  | 'dagligvarer'
+  | 'hjem_og_hage'
+  | 'fritid'
+  | 'restaurant_og_uteliv'
+  | 'transport_og_reise'
+  | 'klaer_og_tilbehoer'
+  | 'ovrig_forbruk'
+  | 'kjoeretoey'
+  | 'helse_og_velvare';
+
 export interface AuthUser {
   uid: string;
   displayName: string | null;
@@ -26,6 +37,7 @@ export interface ExpenseRecord {
   timestamp: number;
   splitAmong?: string[];
   defaultCurrency?: string;
+  category?: ExpenseCategory;
 }
 
 export interface SettlementRecord {

@@ -260,8 +260,8 @@ export default function SharingPage() {
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
   async function handleAddExpense({
-    description, amount, currency, amountInDefault, splitAmong,
-  }: { description: string; amount: number; currency: string; amountInDefault: number; splitAmong?: string[] }) {
+    description, amount, currency, amountInDefault, splitAmong, category,
+  }: { description: string; amount: number; currency: string; amountInDefault: number; splitAmong?: string[]; category?: ExpenseRecord['category'] }) {
     const expensesRef = ref(database, `sharings/${id}/expenses`);
     const newRef = push(expensesRef);
     const entry: Omit<ExpenseRecord, 'defaultCurrency'> = {
@@ -273,6 +273,7 @@ export default function SharingPage() {
       paidBy: currentUserId,
       timestamp: Date.now(),
       ...(splitAmong && splitAmong.length > 0 ? { splitAmong } : {}),
+      ...(category ? { category } : {}),
     };
     await set(newRef, entry);
   }
