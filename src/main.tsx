@@ -29,7 +29,7 @@ const theme = createTheme({
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <BrowserRouter>
+    <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
       <MantineProvider theme={theme}>
         <ModalsProvider>
           <Notifications position="top-right" />
