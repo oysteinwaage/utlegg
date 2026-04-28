@@ -1126,6 +1126,127 @@ body {
   }
 }
 
+// ── Budget Page ───────────────────────────────────────────────────
+.budget-page {
+  &__header {
+    margin-bottom: $space-xl;
+  }
+
+  &__title {
+    font-size: $font-size-2xl;
+    font-weight: 800;
+    color: $color-text-primary;
+    margin: $space-sm 0 0;
+  }
+
+  &__subtitle {
+    font-size: $font-size-base;
+    color: $color-text-secondary;
+    margin: $space-xs 0 0;
+  }
+
+  &__controls {
+    display: flex;
+    align-items: center;
+    gap: $space-md;
+    margin-bottom: $space-xl;
+    flex-wrap: wrap;
+  }
+
+  &__empty {
+    text-align: center;
+    padding: $space-2xl;
+    color: $color-text-muted;
+    font-size: $font-size-base;
+    background: $color-surface;
+    border: 1px solid $color-border;
+    border-radius: $radius-lg;
+  }
+
+  &__categories {
+    display: flex;
+    flex-direction: column;
+    gap: $space-sm;
+  }
+}
+
+.budget-category {
+  background: $color-surface;
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+  padding: $space-md $space-lg;
+
+  &--total {
+    border-color: $color-primary;
+    background: #FAF8FF;
+    margin-top: $space-xs;
+  }
+
+  &__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: $space-sm;
+  }
+
+  &--total &__top {
+    margin-bottom: 0;
+  }
+
+  &__left {
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+  }
+
+  &__right {
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+  }
+
+  &__icon {
+    width: 32px;
+    height: 32px;
+    border-radius: $radius-sm;
+    background: #F0EBFF;
+    color: $color-primary;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__label {
+    font-size: $font-size-base;
+    font-weight: 600;
+    color: $color-text-primary;
+  }
+
+  &--total &__label {
+    font-weight: 700;
+    color: $color-primary;
+  }
+
+  &__amount {
+    font-size: $font-size-base;
+    font-weight: 700;
+    color: $color-text-primary;
+    white-space: nowrap;
+  }
+
+  &--total &__amount {
+    color: $color-primary;
+  }
+
+  &__pct {
+    font-size: $font-size-sm;
+    color: $color-text-muted;
+    min-width: 32px;
+    text-align: right;
+  }
+}
+
 // ── Utility ───────────────────────────────────────────────────────
 .text-muted {
   color: $color-text-muted;

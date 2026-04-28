@@ -7,6 +7,7 @@ import { useAuth } from './contexts/AuthContext';
 import LoginPage from './pages/LoginPage';
 import OverviewPage from './pages/OverviewPage';
 import SharingPage from './pages/SharingPage';
+import BudgetPage from './pages/BudgetPage';
 import AdminPage from './pages/AdminPage';
 import ProfilePage from './pages/ProfilePage';
 
@@ -94,6 +95,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <SharingPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/sharing/:id/budget"
+        element={
+          <ProtectedRoute>
+            <BudgetPage />
           </ProtectedRoute>
         }
       />

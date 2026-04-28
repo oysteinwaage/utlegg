@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Button, ActionIcon, Tooltip, Modal, Text, Stack, Center, Loader, Badge } from '@mantine/core';
+import { Button, ActionIcon, Menu, Modal, Text, Stack, Center, Loader, Badge } from '@mantine/core';
 import {
   IconPlus, IconArrowLeft, IconX, IconRefresh, IconAlertTriangle, IconTrophy, IconTrash,
+  IconDotsVertical, IconChartPie,
 } from '@tabler/icons-react';
 import { ref, onValue, push, set, update, get, remove } from 'firebase/database';
 import { database } from '../firebase/config';
@@ -350,43 +351,39 @@ export default function SharingPage() {
           </Link>
 
           <div className="sharing-page__actions">
-            {isActive && (
-              <>
-                {/* Desktop */}
-                <Button visibleFrom="xs" variant="light" color="violet" radius="md" leftSection={<IconRefresh size={16} />} onClick={() => setSettlementConfirmOpen(true)}>
-                  Avregning
-                </Button>
-                <Button visibleFrom="xs" variant="light" color="red" radius="md" leftSection={<IconX size={16} />} onClick={() => setCloseConfirmOpen(true)}>
-                  Avslutt
-                </Button>
-                {/* Mobile */}
-                <Tooltip hiddenFrom="xs" label="Avregning" position="bottom" withArrow>
-                  <ActionIcon hiddenFrom="xs" variant="light" color="violet" size="lg" radius="md" aria-label="Avregning" onClick={() => setSettlementConfirmOpen(true)}>
-                    <IconRefresh size={18} />
-                  </ActionIcon>
-                </Tooltip>
-                <Tooltip hiddenFrom="xs" label="Avslutt" position="bottom" withArrow>
-                  <ActionIcon hiddenFrom="xs" variant="light" color="red" size="lg" radius="md" aria-label="Avslutt" onClick={() => setCloseConfirmOpen(true)}>
-                    <IconX size={18} />
-                  </ActionIcon>
-                </Tooltip>
-              </>
-            )}
-            {!isActive && (
-              <>
-                <Badge color="gray" variant="light" size="lg" radius="md">Avsluttet</Badge>
-                {/* Desktop */}
-                <Button visibleFrom="xs" variant="light" color="red" radius="md" leftSection={<IconTrash size={16} />} onClick={() => setDeleteConfirmOpen(true)}>
-                  Slett
-                </Button>
-                {/* Mobile */}
-                <Tooltip hiddenFrom="xs" label="Slett deling" position="bottom" withArrow>
-                  <ActionIcon hiddenFrom="xs" variant="light" color="red" size="lg" radius="md" aria-label="Slett deling" onClick={() => setDeleteConfirmOpen(true)}>
-                    <IconTrash size={18} />
-                  </ActionIcon>
-                </Tooltip>
-              </>
-            )}
+            {!isActive && <Badge color="gray" variant="light" size="lg" radius="md">Avsluttet</Badge>}
+            <Menu shadow="md" radius="md" position="bottom-end" withinPortal>
+              <Menu.Target>
+                <ActionIcon variant="light" color="gray" size="lg" radius="md" aria-label="Handlinger">
+                  <IconDotsVertical size={18} />
+                </ActionIcon>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Item leftSection={<IconChartPie size={16} />} onClick={() => navigate(`/sharing/${id}/budget`)}>
+                  Budsjett
+                </Menu.Item>
+                {isActive && (
+                  <>
+                    <Menu.Divider />
+                    <Menu.Item leftSection={<IconRefresh size={16} />} onClick={() => setSettlementConfirmOpen(true)}>
+                      Avregning
+                    </Menu.Item>
+                    <Menu.Divider />
+                    <Menu.Item leftSection={<IconX size={16} />} color="red" onClick={() => setCloseConfirmOpen(true)}>
+                      Avslutt deling
+                    </Menu.Item>
+                  </>
+                )}
+                {!isActive && (
+                  <>
+                    <Menu.Divider />
+                    <Menu.Item leftSection={<IconTrash size={16} />} color="red" onClick={() => setDeleteConfirmOpen(true)}>
+                      Slett deling
+                    </Menu.Item>
+                  </>
+                )}
+              </Menu.Dropdown>
+            </Menu>
           </div>
         </div>
 
