@@ -134,6 +134,8 @@ export default function AddExpenseModal({
             min={0}
             step={10}
             decimalScale={2}
+            allowDecimal
+            decimalSeparator=","
             radius="md"
             required
             inputMode="decimal"
