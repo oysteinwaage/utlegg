@@ -12,17 +12,30 @@ const GOOGLE_LOGO = (
   </svg>
 );
 
+const MICROSOFT_LOGO = (
+  <svg width="20" height="20" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
+    <rect x="0" y="0" width="10" height="10" fill="#F25022"/>
+    <rect x="11" y="0" width="10" height="10" fill="#7FBA00"/>
+    <rect x="0" y="11" width="10" height="10" fill="#00A4EF"/>
+    <rect x="11" y="11" width="10" height="10" fill="#FFB900"/>
+  </svg>
+);
+
 export default function LoginPage() {
-  const { loginWithGoogle } = useAuth();
+  const { loginWithGoogle, loginWithMicrosoft } = useAuth();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+  const [loadingProvider, setLoadingProvider] = useState<'google' | 'microsoft' | null>(null);
   const [error, setError] = useState('');
 
-  async function handleGoogleLogin() {
-    setLoading(true);
+  async function handleLogin(provider: 'google' | 'microsoft') {
+    setLoadingProvider(provider);
     setError('');
     try {
-      await loginWithGoogle();
+      if (provider === 'google') {
+        await loginWithGoogle();
+      } else {
+        await loginWithMicrosoft();
+      }
       navigate('/');
     } catch (err) {
       const e = err as { code?: string };
@@ -30,7 +43,7 @@ export default function LoginPage() {
         setError('Innlogging feilet. Prøv igjen.');
       }
     } finally {
-      setLoading(false);
+      setLoadingProvider(null);
     }
   }
 
@@ -45,9 +58,14 @@ export default function LoginPage() {
           Del utgifter enkelt med en venn. Hold styr på hvem som har lagt ut hva.
         </p>
 
-        <button className="login-page__btn" onClick={handleGoogleLogin} disabled={loading}>
+        <button className="login-page__btn" onClick={() => handleLogin('google')} disabled={loadingProvider !== null}>
           {GOOGLE_LOGO}
-          {loading ? 'Logger inn…' : 'Fortsett med Google'}
+          {loadingProvider === 'google' ? 'Logger inn…' : 'Fortsett med Google'}
+        </button>
+
+        <button className="login-page__btn" onClick={() => handleLogin('microsoft')} disabled={loadingProvider !== null} style={{ marginTop: '12px' }}>
+          {MICROSOFT_LOGO}
+          {loadingProvider === 'microsoft' ? 'Logger inn…' : 'Fortsett med Microsoft'}
         </button>
 
         {error && <div className="login-page__error">{error}</div>}

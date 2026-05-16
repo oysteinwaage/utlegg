@@ -76,6 +76,7 @@ export interface AuthContextValue {
   userProfile: UserProfile | null;
   loading: boolean;
   loginWithGoogle: () => Promise<AuthUser>;
+  loginWithMicrosoft: () => Promise<AuthUser>;
   logout: () => Promise<void>;
   updateUserProfile: (updates: Partial<UserProfile>) => Promise<void>;
 }

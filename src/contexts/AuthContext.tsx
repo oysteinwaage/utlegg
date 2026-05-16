@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
 import { ref, get, set, update } from 'firebase/database';
-import { auth, googleProvider, database } from '../firebase/config';
+import { auth, googleProvider, microsoftProvider, database } from '../firebase/config';
 import type { AuthContextValue, AuthUser, UserProfile } from '../types';
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -57,6 +57,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { uid, displayName, email, photoURL };
   }
 
+  async function loginWithMicrosoft(): Promise<AuthUser> {
+    const result = await signInWithPopup(auth, microsoftProvider);
+    const { uid, displayName, email, photoURL } = result.user;
+    return { uid, displayName, email, photoURL };
+  }
+
   async function logout(): Promise<void> {
     await signOut(auth);
   }
@@ -68,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const currentUserId = currentUser ? currentUser.uid : '';
-  const value: AuthContextValue = { currentUser, currentUserId, userProfile, loading, loginWithGoogle, logout, updateUserProfile };
+  const value: AuthContextValue = { currentUser, currentUserId, userProfile, loading, loginWithGoogle, loginWithMicrosoft, logout, updateUserProfile };
   return (
     <AuthContext.Provider value={value}>
       {!loading && children}
