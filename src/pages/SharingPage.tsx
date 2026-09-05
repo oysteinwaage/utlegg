@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Button, ActionIcon, Menu, Modal, Text, Stack, Center, Loader, Badge } from '@mantine/core';
 import {
   IconPlus, IconArrowLeft, IconX, IconRefresh, IconAlertTriangle, IconTrophy, IconTrash,
-  IconDotsVertical, IconChartPie,
+  IconDotsVertical, IconChartPie, IconFileImport,
 } from '@tabler/icons-react';
 import { ref, onValue, push, set, update, get, remove } from 'firebase/database';
 import { database } from '../firebase/config';
@@ -11,6 +11,7 @@ import { useAuth } from '../contexts/AuthContext';
 import AppLayout from '../components/AppLayout';
 import ExpenseList from '../components/expense/ExpenseList';
 import AddExpenseModal from '../components/expense/AddExpenseModal';
+import ImportTransactionsModal, { type ImportedExpense } from '../components/sharing/ImportTransactionsModal';
 import { formatCurrency, formatShortDate, getInitials } from '../utils/formatUtils';
 import { getExchangeRate } from '../services/currencyService';
 import type { Sharing, UserProfile, AnyEntry, ExpenseRecord, SettlementRecord } from '../types';
@@ -199,6 +200,7 @@ export default function SharingPage() {
   const [loading, setLoading] = useState(true);
 
   const [addExpenseOpen, setAddExpenseOpen]         = useState(false);
+  const [importOpen, setImportOpen]                 = useState(false);
   const [closeConfirmOpen, setCloseConfirmOpen]     = useState(false);
   const [settlementConfirmOpen, setSettlementConfirmOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen]   = useState(false);
@@ -291,6 +293,33 @@ export default function SharingPage() {
     await set(newRef, entry);
   }
 
+  async function handleImportTransactions(entries: ImportedExpense[]) {
+    const defaultCurrency = sharing!.defaultCurrency;
+    const uniqueCurrencies = [...new Set(entries.map((e) => e.currency))].filter((c) => c !== defaultCurrency);
+    const rateEntries = await Promise.all(
+      uniqueCurrencies.map(async (currency): Promise<[string, number]> => [currency, await getExchangeRate(currency, defaultCurrency)]),
+    );
+    const rates = Object.fromEntries(rateEntries);
+
+    const expensesRef = ref(database, `sharings/${id}/expenses`);
+    await Promise.all(entries.map((entry) => {
+      const rate = entry.currency === defaultCurrency ? 1 : (rates[entry.currency] ?? 1);
+      const newRef = push(expensesRef);
+      const record: Omit<ExpenseRecord, 'defaultCurrency'> = {
+        type: 'expense',
+        description: entry.description,
+        amount: entry.amount,
+        currency: entry.currency,
+        amountInDefault: Math.round(entry.amount * rate * 100) / 100,
+        paidBy: currentUserId,
+        timestamp: entry.timestamp,
+        importedFromStatement: true,
+        ...(entry.category ? { category: entry.category } : {}),
+      };
+      return set(newRef, record);
+    }));
+  }
+
   async function handleSettlement() {
     const txns = computeSettlementTxns(netBalances, participantIds);
     const dateStr  = formatShortDate(Date.now());
@@ -327,6 +356,10 @@ export default function SharingPage() {
   async function handleClose() {
     await update(ref(database, `sharings/${id}`), { isActive: false });
     setCloseConfirmOpen(false);
+  }
+
+  async function handleToggleImport() {
+    await update(ref(database, `sharings/${id}`), { importEnabled: !sharing!.importEnabled });
   }
 
   async function handleDelete() {
@@ -370,6 +403,14 @@ export default function SharingPage() {
                 <Menu.Item leftSection={<IconChartPie size={16} />} onClick={() => navigate(`/sharing/${id}/budget`)}>
                   Budsjett
                 </Menu.Item>
+                {isAdmin && (
+                  <>
+                    <Menu.Divider />
+                    <Menu.Item leftSection={<IconFileImport size={16} />} onClick={handleToggleImport}>
+                      {sharing.importEnabled ? 'Deaktiver import' : 'Aktiver import'}
+                    </Menu.Item>
+                  </>
+                )}
                 {isActive && (
                   <>
                     <Menu.Divider />
@@ -447,6 +488,17 @@ export default function SharingPage() {
           >
             Legg til utlegg
           </Button>
+          {sharing.importEnabled && (
+            <Button
+              leftSection={<IconFileImport size={16} />}
+              radius="md"
+              variant="light"
+              color="violet"
+              onClick={() => setImportOpen(true)}
+            >
+              Importer fra DNB
+            </Button>
+          )}
           <div className="action-bar__spacer" />
           <Text size="sm" c="dimmed">
             Totalt lagt ut: {formatCurrency(grandTotal, sharing.defaultCurrency)}
@@ -474,6 +526,13 @@ export default function SharingPage() {
         defaultCurrency={sharing.defaultCurrency}
         participants={participants}
         participantIds={participantIds}
+      />
+
+      {/* Import Transactions Modal */}
+      <ImportTransactionsModal
+        opened={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImport={handleImportTransactions}
       />
 
       {/* Settlement Confirm Modal */}

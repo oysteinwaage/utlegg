@@ -73,6 +73,7 @@ export default function CreateSharingModal({ opened, onClose, onCreated }: Creat
         createdAt: Date.now(),
         isActive: true,
         lastSettlementAt: null,
+        importEnabled: false,
       };
 
       await set(newRef, sharingData);

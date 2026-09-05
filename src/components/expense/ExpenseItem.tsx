@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { ActionIcon } from '@mantine/core';
-import { IconPencil } from '@tabler/icons-react';
+import { ActionIcon, Badge } from '@mantine/core';
+import { IconPencil, IconFileImport } from '@tabler/icons-react';
 import { formatTimestamp, formatCurrency } from '../../utils/formatUtils';
 import { getCategoryIcon } from '../../utils/categoryUtils';
 import EditExpenseModal from './EditExpenseModal';
@@ -57,7 +57,21 @@ export default function ExpenseItem({
         </div>
 
         <div className="expense-item__content">
-          <p className="expense-item__description">{expense.description}</p>
+          <p className="expense-item__description">
+            {expense.description}
+            {expense.importedFromStatement && (
+              <Badge
+                className="expense-item__imported-badge"
+                size="xs"
+                variant="light"
+                color="gray"
+                radius="sm"
+                leftSection={<IconFileImport size={10} />}
+              >
+                Importert
+              </Badge>
+            )}
+          </p>
 
           <div className="expense-item__row">
             <div className="expense-item__body">

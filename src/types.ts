@@ -38,6 +38,7 @@ export interface ExpenseRecord {
   splitAmong?: string[];
   defaultCurrency?: string;
   category?: ExpenseCategory;
+  importedFromStatement?: boolean;
 }
 
 export interface SettlementTransaction {
@@ -79,6 +80,7 @@ export interface Sharing {
   isActive: boolean;
   lastSettlementAt: number | null;
   expenses?: Record<string, AnyEntry>;
+  importEnabled?: boolean;
 }
 
 export interface AuthContextValue {

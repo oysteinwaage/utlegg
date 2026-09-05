@@ -943,6 +943,14 @@ body {
     color: $color-text-primary;
     margin: 0;
     word-break: break-word;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: $space-xs;
+  }
+
+  &__imported-badge {
+    font-weight: 500;
   }
 
   &__row {
@@ -1152,6 +1160,72 @@ body {
 
   &__participant {
     padding: $space-xs 0;
+  }
+}
+
+// ── Import Transactions ─────────────────────────────────────────────
+.import-transactions {
+  &__dropzone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: $space-md;
+    padding: $space-2xl $space-lg;
+    border: 1px dashed $color-border;
+    border-radius: $radius-lg;
+    color: $color-text-muted;
+    text-align: center;
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: $space-sm;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+    padding: $space-sm;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    flex-wrap: wrap;
+  }
+
+  &__toggle-area {
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+    flex: 1;
+    min-width: 0;
+    flex-wrap: wrap;
+    cursor: pointer;
+  }
+
+  &__info {
+    flex: 1;
+    min-width: 160px;
+  }
+
+  &__desc {
+    font-size: $font-size-sm;
+    font-weight: 600;
+    color: $color-text-primary;
+  }
+
+  &__meta {
+    font-size: $font-size-xs;
+    color: $color-text-muted;
+    margin-top: 2px;
+  }
+
+  &__amount {
+    font-size: $font-size-sm;
+    font-weight: 700;
+    color: $color-text-primary;
+    white-space: nowrap;
   }
 }
 
