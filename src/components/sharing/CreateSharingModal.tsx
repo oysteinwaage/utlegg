@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Modal, Button, TextInput, Select, Stack, Text, Alert, Loader } from '@mantine/core';
+import { Modal, Button, TextInput, Select, MultiSelect, Stack, Text, Alert, Loader } from '@mantine/core';
 import { ref, get, push, set } from 'firebase/database';
 import { IconAlertCircle } from '@tabler/icons-react';
 import { database } from '../../firebase/config';
@@ -17,7 +17,7 @@ export default function CreateSharingModal({ opened, onClose, onCreated }: Creat
   const { currentUser, userProfile } = useAuth();
   const [name, setName]             = useState('');
   const [currency, setCurrency]     = useState('NOK');
-  const [otherUserId, setOtherUserId] = useState<string | null>(null);
+  const [otherUserIds, setOtherUserIds] = useState<string[]>([]);
   const [allUsers, setAllUsers]     = useState<{ value: string; label: string }[]>([]);
   const [loading, setLoading]       = useState(false);
   const [error, setError]           = useState('');
@@ -46,23 +46,22 @@ export default function CreateSharingModal({ opened, onClose, onCreated }: Creat
   function handleClose() {
     setName('');
     setCurrency('NOK');
-    setOtherUserId(null);
+    setOtherUserIds([]);
     setError('');
     onClose();
   }
 
   async function handleSubmit() {
     if (!name.trim()) return setError('Navn på delingen er påkrevd.');
-    if (!otherUserId) return setError('Du må velge en annen deltaker.');
+    if (otherUserIds.length === 0) return setError('Du må velge minst én annen deltaker.');
 
     setLoading(true);
     setError('');
 
     try {
-      const participants: Record<string, true> = {
-        [currentUser!.uid]: true,
-        [otherUserId]: true,
-      };
+      const allUids = [currentUser!.uid, ...otherUserIds];
+      const participants: Record<string, true> = {};
+      allUids.forEach((uid) => { participants[uid] = true; });
 
       const sharingsRef = ref(database, 'sharings');
       const newRef      = push(sharingsRef);
@@ -77,10 +76,9 @@ export default function CreateSharingModal({ opened, onClose, onCreated }: Creat
       };
 
       await set(newRef, sharingData);
-      await Promise.all([
-        set(ref(database, `userSharings/${currentUser!.uid}/${newRef.key}`), true),
-        set(ref(database, `userSharings/${otherUserId}/${newRef.key}`), true),
-      ]);
+      await Promise.all(
+        allUids.map((uid) => set(ref(database, `userSharings/${uid}/${newRef.key}`), true)),
+      );
 
       onCreated(newRef.key!);
       handleClose();
@@ -127,22 +125,22 @@ export default function CreateSharingModal({ opened, onClose, onCreated }: Creat
             <Text size="sm" c="dimmed">Laster brukere…</Text>
           </div>
         ) : (
-          <Select
-            label="Velg den andre deltakeren"
-            placeholder="Søk etter bruker…"
+          <MultiSelect
+            label="Velg de andre deltakerne"
+            placeholder="Søk etter brukere…"
             data={allUsers}
-            value={otherUserId}
-            onChange={(val) => setOtherUserId(val)}
+            value={otherUserIds}
+            onChange={(val) => setOtherUserIds(val)}
             radius="md"
             searchable
-            nothingFoundMessage="Ingen andre brukere funnet. Den andre personen må logge inn én gang først."
+            nothingFoundMessage="Ingen andre brukere funnet. De andre personene må logge inn én gang først."
             required
           />
         )}
 
         <Text size="xs" c="dimmed">
-          Begge deltakere er du selv og personen du velger. Den andre personen må ha logget inn
-          i appen minst én gang.
+          Du er selv deltaker, i tillegg til personene du velger. De andre personene må ha
+          logget inn i appen minst én gang.
         </Text>
 
         <Button

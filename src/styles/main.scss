@@ -445,11 +445,12 @@ body {
 // ── Participant Cards ─────────────────────────────────────────────
 .participant-cards {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: $space-md;
   margin-bottom: $space-xl;
 
   @media (max-width: $bp-sm) {
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
     gap: $space-sm;
   }
 }
@@ -1081,6 +1082,34 @@ body {
     font-size: $font-size-sm;
     font-weight: 600;
     color: $color-success;
+  }
+
+  &__transactions {
+    display: flex;
+    flex-direction: column;
+    gap: $space-sm;
+    margin-bottom: $space-md;
+  }
+
+  &__transaction {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: $space-sm;
+  }
+
+  &__transaction-text {
+    font-size: $font-size-sm;
+    color: #78350F;
+
+    span {
+      font-weight: 700;
+    }
+  }
+
+  &--transferred &__transaction-text {
+    color: #065F46;
   }
 }
 

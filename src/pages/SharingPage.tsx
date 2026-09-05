@@ -59,29 +59,41 @@ function computeNetBalances(
   return balances;
 }
 
-interface SettlementResult {
+interface SettlementTxn {
   debtorId: string;
   creditorId: string;
-  debtAmount: number;
-  t1: number;
-  t2: number;
-  uid1: string;
-  uid2: string;
+  amount: number;
 }
 
-function computeSettlement(
-  totals: Record<string, number>,
+// Grådig minimal-overføringsalgoritme: match største skyldner mot største kreditor.
+function computeSettlementTxns(
   netBalances: Record<string, number>,
   participantIds: string[],
-): SettlementResult {
-  const [uid1, uid2] = participantIds as [string, string];
-  const t1 = totals[uid1] || 0;
-  const t2 = totals[uid2] || 0;
-  const b1 = netBalances[uid1] || 0;
-  const debtAmount = Math.round(Math.abs(b1) * 100) / 100;
-  const debtorId   = b1 >= 0 ? uid2 : uid1;
-  const creditorId = b1 >= 0 ? uid1 : uid2;
-  return { debtorId, creditorId, debtAmount, t1, t2, uid1, uid2 };
+): SettlementTxn[] {
+  const debtors:   { id: string; amt: number }[] = [];
+  const creditors: { id: string; amt: number }[] = [];
+  participantIds.forEach((id) => {
+    const b = netBalances[id] || 0;
+    if (b < -0.005) debtors.push({ id, amt: -b });
+    else if (b > 0.005) creditors.push({ id, amt: b });
+  });
+  debtors.sort((a, b) => b.amt - a.amt);
+  creditors.sort((a, b) => b.amt - a.amt);
+
+  const txns: SettlementTxn[] = [];
+  let i = 0, j = 0;
+  while (i < debtors.length && j < creditors.length) {
+    const pay = Math.min(debtors[i].amt, creditors[j].amt);
+    txns.push({
+      debtorId: debtors[i].id,
+      creditorId: creditors[j].id,
+      amount: Math.round(pay * 100) / 100,
+    });
+    debtors[i].amt -= pay; creditors[j].amt -= pay;
+    if (debtors[i].amt < 0.005) i++;
+    if (creditors[j].amt < 0.005) j++;
+  }
+  return txns;
 }
 
 // ── Participant Card ──────────────────────────────────────────────────────────
@@ -140,18 +152,15 @@ function ParticipantCard({ profile, total, diff, defaultCurrency, preferredCurre
 interface ClosingStatusProps {
   participants: Record<string, UserProfile>;
   participantIds: string[];
-  totals: Record<string, number>;
   netBalances: Record<string, number>;
   defaultCurrency: string;
   preferredCurrency?: string;
   conversionRate?: number;
 }
 
-function ClosingStatus({ participants, participantIds, totals, netBalances, defaultCurrency, preferredCurrency, conversionRate = 1 }: ClosingStatusProps) {
-  const { debtorId, creditorId, debtAmount } = computeSettlement(totals, netBalances, participantIds);
-  const debtor   = participants[debtorId];
-  const creditor = participants[creditorId];
-  const showConverted = preferredCurrency && preferredCurrency !== defaultCurrency && debtAmount > 0;
+function ClosingStatus({ participants, participantIds, netBalances, defaultCurrency, preferredCurrency, conversionRate = 1 }: ClosingStatusProps) {
+  const txns = computeSettlementTxns(netBalances, participantIds);
+  const showConverted = preferredCurrency && preferredCurrency !== defaultCurrency;
 
   return (
     <div className="closing-status">
@@ -159,16 +168,19 @@ function ClosingStatus({ participants, participantIds, totals, netBalances, defa
         <IconTrophy size={18} />
         Delingen er avsluttet — Sluttstatus
       </h3>
-      {debtAmount === 0 ? (
-        <p className="closing-status__summary">Begge har betalt like mye. Ingen skylder noen noe!</p>
+      {txns.length === 0 ? (
+        <p className="closing-status__summary">Alle har betalt like mye. Ingen skylder noen noe!</p>
       ) : (
-        <p className="closing-status__summary">
-          <strong>{debtor?.name}</strong> skylder <strong>{creditor?.name}</strong>{' '}
-          <strong>{formatCurrency(debtAmount, defaultCurrency)}</strong>
-          {showConverted && (
-            <> (≈ <strong>{formatCurrency(debtAmount * conversionRate, preferredCurrency!)}</strong>)</>
-          )}
-        </p>
+        txns.map((txn, idx) => (
+          <p key={idx} className="closing-status__summary">
+            <strong>{participants[txn.debtorId]?.name}</strong> skylder{' '}
+            <strong>{participants[txn.creditorId]?.name}</strong>{' '}
+            <strong>{formatCurrency(txn.amount, defaultCurrency)}</strong>
+            {showConverted && (
+              <> (≈ <strong>{formatCurrency(txn.amount * conversionRate, preferredCurrency!)}</strong>)</>
+            )}
+          </p>
+        ))
       )}
     </div>
   );
@@ -280,32 +292,28 @@ export default function SharingPage() {
   }
 
   async function handleSettlement() {
-    const { debtorId, creditorId, debtAmount, t1, t2, uid1, uid2 } =
-      computeSettlement(totals, netBalances, participantIds);
-
-    const debtor   = participants[debtorId];
-    const creditor = participants[creditorId];
+    const txns = computeSettlementTxns(netBalances, participantIds);
     const dateStr  = formatShortDate(Date.now());
     const defaultCurrency = sharing!.defaultCurrency;
 
     const descriptionText =
-      debtAmount > 0
-        ? `Nullstiller ${dateStr}. ${debtor?.name} skylder ${creditor?.name} ${formatCurrency(debtAmount, defaultCurrency)}`
+      txns.length > 0
+        ? `Nullstiller ${dateStr}. ` +
+          txns
+            .map((t) => `${participants[t.debtorId]?.name} skylder ${participants[t.creditorId]?.name} ${formatCurrency(t.amount, defaultCurrency)}`)
+            .join('; ')
         : `Nullstiller ${dateStr}. Ingen skylder noen noe.`;
+
+    const fullTotals: Record<string, number> = {};
+    participantIds.forEach((uid) => { fullTotals[uid] = totals[uid] || 0; });
 
     const now = Date.now();
     const settlementEntry: Omit<SettlementRecord, 'defaultCurrency'> = {
       type: 'settlement',
       description: descriptionText,
-      debtorId,
-      creditorId,
-      debtAmount,
-      user1Id: uid1,
-      user2Id: uid2,
-      user1Amount: t1,
-      user2Amount: t2,
+      totals: fullTotals,
+      transactions: txns.map((t) => ({ ...t, transferred: false })),
       currency: defaultCurrency,
-      transferred: false,
       timestamp: now,
     };
 
@@ -421,7 +429,6 @@ export default function SharingPage() {
         <ClosingStatus
           participants={participants}
           participantIds={participantIds}
-          totals={totals}
           netBalances={netBalances}
           defaultCurrency={sharing.defaultCurrency}
           preferredCurrency={preferredCurrency && conversionRates[preferredCurrency] !== undefined ? preferredCurrency : undefined}
@@ -480,23 +487,26 @@ export default function SharingPage() {
         <Stack gap="md">
           {(() => {
             if (participantIds.length < 2) return null;
-            const { debtorId, creditorId, debtAmount } = computeSettlement(totals, netBalances, participantIds);
-            const debtor   = participants[debtorId];
-            const creditor = participants[creditorId];
+            const txns = computeSettlementTxns(netBalances, participantIds);
+            const showConverted = preferredCurrency && conversionRates[preferredCurrency] !== undefined && preferredCurrency !== sharing.defaultCurrency;
+            if (txns.length === 0) {
+              return <Text size="sm">Alle har betalt like mye. Summene nullstilles.</Text>;
+            }
             return (
               <Text size="sm">
-                {debtAmount > 0 ? (
-                  <>
-                    <strong>{debtor?.name}</strong> skylder <strong>{creditor?.name}</strong>{' '}
-                    <strong>{formatCurrency(debtAmount, sharing.defaultCurrency)}</strong>
-                    {preferredCurrency && conversionRates[preferredCurrency] !== undefined && preferredCurrency !== sharing.defaultCurrency && (
-                      <> (≈ <strong>{formatCurrency(debtAmount * conversionRates[preferredCurrency], preferredCurrency)}</strong>)</>
-                    )}{' '}
-                    basert på gjeldende utlegg. Summene nullstilles etter avregning.
-                  </>
-                ) : (
-                  'Begge har betalt like mye. Summene nullstilles.'
-                )}
+                {txns.map((txn, idx) => (
+                  <span key={idx} style={{ display: 'block' }}>
+                    <strong>{participants[txn.debtorId]?.name}</strong> skylder{' '}
+                    <strong>{participants[txn.creditorId]?.name}</strong>{' '}
+                    <strong>{formatCurrency(txn.amount, sharing.defaultCurrency)}</strong>
+                    {showConverted && (
+                      <> (≈ <strong>{formatCurrency(txn.amount * conversionRates[preferredCurrency!], preferredCurrency!)}</strong>)</>
+                    )}
+                  </span>
+                ))}
+                <span style={{ display: 'block', marginTop: 8 }}>
+                  Basert på gjeldende utlegg. Summene nullstilles etter avregning.
+                </span>
               </Text>
             );
           })()}

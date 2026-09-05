@@ -40,20 +40,31 @@ export interface ExpenseRecord {
   category?: ExpenseCategory;
 }
 
+export interface SettlementTransaction {
+  debtorId: string;
+  creditorId: string;
+  amount: number;
+  transferred: boolean;
+}
+
 export interface SettlementRecord {
   type: 'settlement';
   description: string;
-  debtorId: string;
-  creditorId: string;
-  debtAmount: number;
-  user1Id: string;
-  user2Id: string;
-  user1Amount: number;
-  user2Amount: number;
   currency: string;
-  transferred: boolean;
   timestamp: number;
   defaultCurrency?: string;
+  // Nytt N-personers format:
+  totals?: Record<string, number>;          // beløp lagt ut per deltaker
+  transactions?: SettlementTransaction[];   // hvem skylder hvem
+  // Gammelt 2-personers format (beholdes for eksisterende poster):
+  debtorId?: string;
+  creditorId?: string;
+  debtAmount?: number;
+  user1Id?: string;
+  user2Id?: string;
+  user1Amount?: number;
+  user2Amount?: number;
+  transferred?: boolean;
 }
 
 export type AnyEntry = ExpenseRecord | SettlementRecord;
