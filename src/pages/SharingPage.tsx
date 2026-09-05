@@ -12,6 +12,7 @@ import AppLayout from '../components/AppLayout';
 import ExpenseList from '../components/expense/ExpenseList';
 import AddExpenseModal from '../components/expense/AddExpenseModal';
 import ImportTransactionsModal, { type ImportedExpense } from '../components/sharing/ImportTransactionsModal';
+import { transactionSignature } from '../utils/importTransactions';
 import { formatCurrency, formatShortDate, getInitials } from '../utils/formatUtils';
 import { getExchangeRate } from '../services/currencyService';
 import type { Sharing, UserProfile, AnyEntry, ExpenseRecord, SettlementRecord } from '../types';
@@ -248,6 +249,16 @@ export default function SharingPage() {
 
   const grandTotal = Object.values(totals).reduce((s, v) => s + v, 0);
   const preferredCurrency = userProfile?.preferredCurrency;
+
+  const existingTransactionSignatures = useMemo(() => {
+    const signatures = new Set<string>();
+    Object.values(sharing?.expenses ?? {})
+      .filter((e): e is ExpenseRecord => e.type === 'expense')
+      .forEach((e) => {
+        signatures.add(transactionSignature(e.description, e.amount, e.timestamp));
+      });
+    return signatures;
+  }, [sharing?.expenses]);
 
   useEffect(() => {
     if (!sharing || Object.keys(participants).length === 0) return;
@@ -533,6 +544,7 @@ export default function SharingPage() {
         opened={importOpen}
         onClose={() => setImportOpen(false)}
         onImport={handleImportTransactions}
+        existingSignatures={existingTransactionSignatures}
       />
 
       {/* Settlement Confirm Modal */}

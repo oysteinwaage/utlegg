@@ -1,6 +1,22 @@
 import ExpenseItem from './ExpenseItem';
 import SettlementItem from './SettlementItem';
+import { transactionSignature } from '../../utils/importTransactions';
 import type { AnyEntry, ExpenseRecord, SettlementRecord, UserProfile } from '../../types';
+
+function findDuplicateIds(expenses: Record<string, AnyEntry>): Set<string> {
+  const seen = new Map<string, string>();
+  const duplicates = new Set<string>();
+  Object.entries(expenses).forEach(([id, entry]) => {
+    if (entry.type !== 'expense') return;
+    const sig = transactionSignature(entry.description, entry.amount, entry.timestamp);
+    if (seen.has(sig)) {
+      duplicates.add(id);
+    } else {
+      seen.set(sig, id);
+    }
+  });
+  return duplicates;
+}
 
 interface ExpenseListProps {
   expenses: Record<string, AnyEntry> | undefined;
@@ -26,6 +42,7 @@ export default function ExpenseList({
   }
 
   const sorted = Object.entries(expenses).sort(([, a], [, b]) => b.timestamp - a.timestamp);
+  const duplicateIds = findDuplicateIds(expenses);
 
   return (
     <div className="expense-list">
@@ -66,6 +83,7 @@ export default function ExpenseList({
             currentUserId={currentUserId}
             isAdmin={isAdmin}
             lastSettlementAt={lastSettlementAt}
+            isDuplicate={duplicateIds.has(id)}
           />
         );
       })}

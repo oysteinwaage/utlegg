@@ -953,6 +953,15 @@ body {
     font-weight: 500;
   }
 
+  &__duplicate-badge {
+    font-weight: 500;
+  }
+
+  &--duplicate {
+    background: $color-danger-bg;
+    border-color: rgba($color-danger, 0.25);
+  }
+
   &__row {
     display: flex;
     align-items: center;
@@ -1213,6 +1222,10 @@ body {
     font-size: $font-size-sm;
     font-weight: 600;
     color: $color-text-primary;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: $space-xs;
   }
 
   &__meta {
@@ -1226,6 +1239,21 @@ body {
     font-weight: 700;
     color: $color-text-primary;
     white-space: nowrap;
+  }
+
+  &__category {
+    width: 190px;
+  }
+
+  @media (max-width: $bp-sm) {
+    &__row {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    &__category {
+      width: 100%;
+    }
   }
 }
 

@@ -28,6 +28,12 @@ function guessCategory(description: string): ExpenseCategory | undefined {
   return match?.category;
 }
 
+export function transactionSignature(description: string, amount: number, date: number): string {
+  const d = new Date(date);
+  const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return `${description.trim().toLowerCase()}|${Math.round(amount * 100)}|${day}`;
+}
+
 const HEADER_ALIASES: Record<'date' | 'description' | 'out', string[]> = {
   date: ['dato'],
   description: ['beløpet gjelder', 'belopet gjelder'],

@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
-import { Modal, Button, Text, Stack, Alert, Checkbox, ScrollArea, Select, Group } from '@mantine/core';
+import { Modal, Button, Text, Stack, Alert, Checkbox, ScrollArea, Select, Group, Badge } from '@mantine/core';
 import { IconAlertCircle, IconFileSpreadsheet, IconUpload } from '@tabler/icons-react';
-import { parseTransactionsFile, type ParsedTransaction } from '../../utils/importTransactions';
+import { parseTransactionsFile, transactionSignature, type ParsedTransaction } from '../../utils/importTransactions';
 import { formatCurrency, formatTimestamp } from '../../utils/formatUtils';
 import { CATEGORIES, getCategoryIcon } from '../../utils/categoryUtils';
 import type { ExpenseCategory } from '../../types';
@@ -18,9 +18,10 @@ interface ImportTransactionsModalProps {
   opened: boolean;
   onClose: () => void;
   onImport: (entries: ImportedExpense[]) => Promise<void>;
+  existingSignatures: Set<string>;
 }
 
-export default function ImportTransactionsModal({ opened, onClose, onImport }: ImportTransactionsModalProps) {
+export default function ImportTransactionsModal({ opened, onClose, onImport, existingSignatures }: ImportTransactionsModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [transactions, setTransactions] = useState<ParsedTransaction[]>([]);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
@@ -73,6 +74,10 @@ export default function ImportTransactionsModal({ opened, onClose, onImport }: I
   function categoryFor(t: ParsedTransaction): ExpenseCategory | undefined {
     const override = categoryOverrides[t.key];
     return override !== undefined ? (override ?? undefined) : t.category;
+  }
+
+  function isAlreadyImported(t: ParsedTransaction): boolean {
+    return existingSignatures.has(transactionSignature(t.description, t.amount, t.date));
   }
 
   const selectedCount = transactions.filter((t) => selected[t.key]).length;
@@ -171,6 +176,11 @@ export default function ImportTransactionsModal({ opened, onClose, onImport }: I
                         <div className="import-transactions__info">
                           <div className="import-transactions__desc">
                             {t.description || 'Uten beskrivelse'}
+                            {isAlreadyImported(t) && (
+                              <Badge size="xs" color="gray" variant="light">
+                                Allerede importert
+                              </Badge>
+                            )}
                           </div>
                           <div className="import-transactions__meta">{formatTimestamp(t.date)}</div>
                         </div>
@@ -188,7 +198,6 @@ export default function ImportTransactionsModal({ opened, onClose, onImport }: I
                         leftSection={<CategoryIcon size={14} />}
                         clearable
                         radius="md"
-                        w={190}
                       />
                     </div>
                   );

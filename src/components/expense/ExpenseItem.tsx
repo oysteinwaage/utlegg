@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ActionIcon, Badge } from '@mantine/core';
-import { IconPencil, IconFileImport } from '@tabler/icons-react';
+import { IconPencil, IconFileImport, IconAlertTriangle } from '@tabler/icons-react';
 import { formatTimestamp, formatCurrency } from '../../utils/formatUtils';
 import { getCategoryIcon } from '../../utils/categoryUtils';
 import EditExpenseModal from './EditExpenseModal';
@@ -17,10 +17,11 @@ interface ExpenseItemProps {
   currentUserId: string;
   isAdmin: boolean;
   lastSettlementAt: number;
+  isDuplicate?: boolean;
 }
 
 export default function ExpenseItem({
-  expense, expenseId, sharingId, participants, participantIds, currentUserId, isAdmin, lastSettlementAt,
+  expense, expenseId, sharingId, participants, participantIds, currentUserId, isAdmin, lastSettlementAt, isDuplicate,
 }: ExpenseItemProps) {
   const [editOpen, setEditOpen] = useState(false);
   const payer      = participants[expense.paidBy];
@@ -49,7 +50,7 @@ export default function ExpenseItem({
 
   return (
     <>
-      <div className="expense-item">
+      <div className={`expense-item${isDuplicate ? ' expense-item--duplicate' : ''}`}>
         <div className="expense-item__icon">
           <span className="expense-item__icon-badge">
             <CategoryIcon size={20} />
@@ -57,7 +58,7 @@ export default function ExpenseItem({
         </div>
 
         <div className="expense-item__content">
-          <p className="expense-item__description">
+          <div className="expense-item__description">
             {expense.description}
             {expense.importedFromStatement && (
               <Badge
@@ -71,7 +72,19 @@ export default function ExpenseItem({
                 Importert
               </Badge>
             )}
-          </p>
+            {isDuplicate && (
+              <Badge
+                className="expense-item__duplicate-badge"
+                size="xs"
+                variant="light"
+                color="red"
+                radius="sm"
+                leftSection={<IconAlertTriangle size={10} />}
+              >
+                Sannsynlig duplikat
+              </Badge>
+            )}
+          </div>
 
           <div className="expense-item__row">
             <div className="expense-item__body">
